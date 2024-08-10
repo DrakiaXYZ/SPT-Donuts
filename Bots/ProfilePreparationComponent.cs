@@ -601,26 +601,6 @@ namespace Donuts
             }
         }
 
-        internal static async UniTask ScheduleWaveBossSpawn(BossSpawn bossSpawn, List<Vector3> coordinates, CancellationToken cancellationToken, string selectedZone)
-        {
-            Logger.LogInfo($"Scheduling wave boss spawn: {bossSpawn.BossName}");
-
-            // Create boss and get the central position for supports
-            var bossCreationData = await CreateBoss(bossSpawn, coordinates, cancellationToken, selectedZone);
-
-            Logger.LogInfo($"ScheduleWaveBossSpawn: Completed creating boss: {bossSpawn.BossName}");
-
-            if (bossCreationData != null)
-            {
-                var centralPosition = bossCreationData.GetPosition();
-
-                // Schedule support units
-                if (bossSpawn.Supports != null && bossSpawn.Supports.Any())
-                {
-                    await ScheduleSupportsAsync(bossSpawn.Supports, centralPosition.position, coordinates, selectedZone, cancellationToken);
-                }
-            }
-        }
         internal static async UniTask<BotCreationDataClass> CreateBoss(BossSpawn bossSpawn, List<Vector3> coordinates, CancellationToken cancellationToken, string selectedZone)
         {
             if (botCreator == null)
@@ -747,6 +727,132 @@ namespace Donuts
             );
         }
 
+        internal static async UniTask ScheduleWaveBossSpawnDirectly(BossSpawn bossSpawn, List<Vector3> coordinates, CancellationToken cancellationToken, string selectedZone)
+        {
+            string methodName = nameof(ScheduleWaveBossSpawnDirectly);
+            UnityEngine.Debug.Log($"{methodName}: Starting wave boss spawn for {bossSpawn.BossName}.");
+
+            // Get random coordinate from coordinates
+            if (coordinates == null || coordinates.Count == 0)
+            {
+                UnityEngine.Debug.LogError($"{methodName}: No coordinates available for spawning.");
+                return;
+            }
+
+            var randomCoordinate = coordinates.Random();
+            Vector3 centralPosition = randomCoordinate;
+
+            UnityEngine.Debug.Log($"{methodName}: Selected random coordinate {randomCoordinate} for boss spawn.");
+
+
+            // Create wave boss and get the central position for supports
+            var waveBossCreationData = await CreateWaveBossProfile(bossSpawn, cancellationToken, selectedZone);
+
+            if (waveBossCreationData == null)
+            {
+                UnityEngine.Debug.LogError($"{methodName}: Failed to create wave boss profile for {bossSpawn.BossName}.");
+                return;
+            }
+
+            if (waveBossCreationData.Profiles.Count == 0)
+            {
+                UnityEngine.Debug.LogError($"{methodName}: No profiles found for wave boss {bossSpawn.BossName}.");
+                return;
+            }
+            waveBossCreationData.AddPosition(centralPosition, UnityEngine.Random.Range(0, 10000));
+                    
+            UnityEngine.Debug.Log($"{methodName}: Successfully created wave boss profile.");
+
+            UnityEngine.Debug.Log($"{methodName}: Central position for spawning is {centralPosition}.");
+
+            // Directly activate wave boss
+            UnityEngine.Debug.Log($"{methodName}: Activating boss spawn: {bossSpawn.BossName} at position {centralPosition}.");
+
+            var closestBotZone = botSpawnerClass?.GetClosestZone(waveBossCreationData.GetPosition().position, out _);
+            var cts = new CancellationTokenSource();
+            await BotSpawnHelper.ActivateBot(closestBotZone, waveBossCreationData, cts, cancellationToken);
+
+            UnityEngine.Debug.Log($"{methodName}: Boss {bossSpawn.BossName} activated successfully.");
+
+            // Schedule support units
+            if (bossSpawn.Supports != null && bossSpawn.Supports.Any())
+            {
+                UnityEngine.Debug.Log($"{methodName}: Scheduling support units for {bossSpawn.BossName}.");
+                await ScheduleWaveSupportsAsync(bossSpawn.Supports, centralPosition, coordinates, selectedZone, cancellationToken);
+            }
+            else
+            {
+                UnityEngine.Debug.Log($"{methodName}: No support units to schedule for {bossSpawn.BossName}.");
+            }
+
+            UnityEngine.Debug.Log($"{methodName}: Completed wave boss spawn for {bossSpawn.BossName}.");
+        }
+
+        internal static async UniTask<BotCreationDataClass> CreateWaveBossProfile(BossSpawn bossSpawn, CancellationToken cancellationToken, string selectedZone)
+        {
+            if (botCreator == null)
+            {
+                Logger.LogError("Bot creator is not initialized.");
+                return null;
+            }
+
+            var bossWildSpawnType = WildSpawnTypeDictionaries.StringToWildSpawnType[bossSpawn.BossName.ToLower()];
+            var bossSide = WildSpawnTypeDictionaries.WildSpawnTypeToEPlayerSide[bossWildSpawnType];
+            var bossDifficulty = GetRandomDifficultyForBoss();
+
+            var bossData = CreateProfileData(bossSide, bossWildSpawnType, bossDifficulty);
+
+            // Mark this bot as a boss for wave
+            bossData.SpawnParams = new BotSpawnParams();
+            bossData.SpawnParams.ShallBeGroup = new ShallBeGroupParams(true, true);
+
+
+            Logger.LogInfo($"Creating wave boss profile: Name={bossSpawn.BossName}, Difficulty={bossDifficulty}, Side={bossSide}");
+
+            var newBotCreationDataClass = await BotCreationDataClass.Create(bossData, DonutsBotPrep.botCreator, 1, DonutsBotPrep.botSpawnerClass);
+
+            return newBotCreationDataClass;
+        }
+
+        private static async UniTask ScheduleWaveSupportsAsync(List<Support> supports, Vector3 centralPosition, List<Vector3> coordinates, string selectedZone, CancellationToken cancellationToken)
+        {
+            foreach (var support in supports)
+            {
+                await CreateWaveSupportAsync(support, centralPosition, coordinates, selectedZone, cancellationToken);
+            }
+        }
+
+        private static async UniTask CreateWaveSupportAsync(Support support, Vector3 centralPosition, List<Vector3> coordinates, string selectedZone, CancellationToken cancellationToken)
+        {
+            Logger.LogInfo($"Creating wave support for: Type={support.BossEscortType}, Amount={support.BossEscortAmount}");
+
+            var supportWildSpawnType = WildSpawnTypeDictionaries.StringToWildSpawnType[support.BossEscortType.ToLower()];
+            var supportSide = WildSpawnTypeDictionaries.WildSpawnTypeToEPlayerSide[supportWildSpawnType];
+            var supportDifficulty = GetRandomDifficultyForSupport();
+
+            for (int i = 0; i < support.BossEscortAmount; i++)
+            {
+                Logger.LogInfo($"Creating wave support bot {i + 1}/{support.BossEscortAmount}");
+
+                // Create individual profile and info for each bot
+                var supportData = CreateProfileData(supportSide, supportWildSpawnType, supportDifficulty);
+
+                var offsetPosition = GetOffsetPosition(centralPosition);
+
+                supportData.SpawnParams = new BotSpawnParams();
+                supportData.SpawnParams.ShallBeGroup = new ShallBeGroupParams(true, true, support.BossEscortAmount);
+
+                var waveSupportCreationDataClass = await BotCreationDataClass.Create(supportData, DonutsBotPrep.botCreator, 1, DonutsBotPrep.botSpawnerClass);
+
+                waveSupportCreationDataClass.AddPosition(centralPosition, UnityEngine.Random.Range(0, 10000));
+
+                var closestBotZone = botSpawnerClass?.GetClosestZone(waveSupportCreationDataClass.GetPosition().position, out _);
+                var cts = new CancellationTokenSource();
+                await BotSpawnHelper.ActivateBot(closestBotZone, waveSupportCreationDataClass, cts, cancellationToken);
+            }
+
+            Logger.LogInfo($"Creating wave support completed: Type={support.BossEscortType}, Difficulty=normal, Amount={support.BossEscortAmount}");
+        }
         private void Update()
         {
             timeSinceLastReplenish += Time.deltaTime;

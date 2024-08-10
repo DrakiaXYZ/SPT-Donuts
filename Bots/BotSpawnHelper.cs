@@ -683,14 +683,14 @@ namespace Donuts
         {
             spawnType = spawnType.ToLower();
 
-            if (WildSpawnTypeDictionaries.StringToWildSpawnType.TryGetValue(spawnType, out var wildSpawnType))
-            {
-                return wildSpawnType;
-            }
-
             if (spawnType == "pmc")
             {
                 return UnityEngine.Random.Range(0, 2) == 0 ? WildSpawnType.pmcUSEC : WildSpawnType.pmcBEAR;
+            }
+
+            if (WildSpawnTypeDictionaries.StringToWildSpawnType.TryGetValue(spawnType, out var wildSpawnType))
+            {
+                return wildSpawnType;
             }
 
             return WildSpawnType.assault;

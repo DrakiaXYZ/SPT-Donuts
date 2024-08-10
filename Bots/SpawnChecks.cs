@@ -98,6 +98,7 @@ namespace Donuts
                 {
                     continue;
                 }
+                await UniTask.SwitchToMainThread();
                 Vector3 playerPosition = player.MainParts[BodyPartType.head].Position;
                 Vector3 direction = (playerPosition - spawnPosition).normalized;
                 float distance = Vector3.Distance(spawnPosition, playerPosition);
@@ -188,21 +189,22 @@ namespace Donuts
         internal static async Task<bool> IsMinSpawnDistanceFromPlayerTooShort(Vector3 position, CancellationToken cancellationToken)
         {
             float minDistanceFromPlayer = GetMinDistanceFromPlayer();
+            await UniTask.SwitchToMainThread(); // Ensure we're on the main thread
 
-            var tasks = playerList
-                .Where(player => player != null && player.HealthController != null && player.HealthController.IsAlive)
-                .Select(player => Task.Run(() =>
+            //don't turn into async tasks as .position needs to be run in main thread
+            foreach (var player in playerList)
+            {
+                if (player != null && player.HealthController != null && player.HealthController.IsAlive)
                 {
+                    // Check distance on the main thread
                     if ((player.Position - position).sqrMagnitude < (minDistanceFromPlayer * minDistanceFromPlayer))
                     {
                         return true;
                     }
-                    return false;
-                }, cancellationToken))
-                .ToList();
+                }
+            }
 
-            bool[] results = await Task.WhenAll(tasks);
-            return results.Any(result => result);
+            return false;
         }
 
         internal static async Task<bool> IsPositionTooCloseToOtherBots(Vector3 position, CancellationToken cancellationToken)
@@ -210,20 +212,22 @@ namespace Donuts
             float minDistanceFromOtherBots = GetMinDistanceFromOtherBots();
             List<Player> players = Singleton<GameWorld>.Instance.AllAlivePlayersList;
 
-            var tasks = players
-                .Where(player => player != null && player.HealthController.IsAlive && !player.IsYourPlayer)
-                .Select(player => Task.Run(() =>
+            await UniTask.SwitchToMainThread(); // Ensure we're on the main thread
+
+            foreach (var player in players)
+            {
+                //don't turn into async tasks as .position needs to be run in main thread
+                if (player != null && player.HealthController.IsAlive && !player.IsYourPlayer)
                 {
+                    // Check distance on the main thread
                     if ((player.Position - position).sqrMagnitude < (minDistanceFromOtherBots * minDistanceFromOtherBots))
                     {
                         return true;
                     }
-                    return false;
-                }, cancellationToken))
-                .ToList();
+                }
+            }
 
-            bool[] results = await Task.WhenAll(tasks);
-            return results.Any(result => result);
+            return false;
         }
 
         #endregion

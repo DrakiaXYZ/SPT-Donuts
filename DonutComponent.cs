@@ -313,7 +313,24 @@ namespace Donuts
                 return;
             }
 
+            var spawnTasks = new List<UniTask>();
+
             foreach (var bossSpawn in botWaves.BOSSES)
+            {
+                spawnTasks.Add(SpawnBossAsync(bossSpawn, cancellationToken));
+            }
+
+            // Run all spawn tasks concurrently
+            await UniTask.WhenAll(spawnTasks);
+
+            // Yield to ensure loop iteration respects the game's update cycle
+            await UniTask.Yield(PlayerLoopTiming.Update);
+        }
+
+        private async UniTask SpawnBossAsync(BossSpawn bossSpawn, CancellationToken cancellationToken)
+        {
+            string methodName = nameof(SpawnBossAsync);
+            try
             {
                 // Update cooldown for the boss
                 bossSpawn.UpdateCooldown(Time.deltaTime, DefaultPluginVars.bossWaveCooldownTimer.Value);
@@ -322,7 +339,7 @@ namespace Donuts
                 if (!bossSpawn.ShouldSpawn())
                 {
                     //UnityEngine.Debug.Log($"{methodName}: Skipping spawn for {bossSpawn.BossName}: in cooldown or spawn already pending.");
-                    continue;
+                    return;
                 }
 
                 UnityEngine.Debug.Log($"{methodName}: Checking spawn chance for boss: {bossSpawn.BossName}");
@@ -332,7 +349,7 @@ namespace Donuts
                 if (randomValue >= bossSpawn.BossChance)
                 {
                     UnityEngine.Debug.Log($"{methodName}: Boss spawn cancelled due to chance: {bossSpawn.BossName} (Chance: {bossSpawn.BossChance}%, Rolled: {randomValue})");
-                    continue;
+                    return;
                 }
 
                 UnityEngine.Debug.Log($"{methodName}: Scheduling boss spawn: {bossSpawn.BossName}");
@@ -365,7 +382,7 @@ namespace Donuts
                         UnityEngine.Debug.Log($"{methodName}: Selected zone {randomZone} for boss {bossSpawn.BossName}, scheduling spawn.");
 
                         // Schedule the boss spawn using the wave-specific method
-                        await DonutsBotPrep.ScheduleWaveBossSpawn(bossSpawn, coordinates, cancellationToken, randomZone);
+                        await DonutsBotPrep.ScheduleWaveBossSpawnDirectly(bossSpawn, coordinates, cancellationToken, randomZone);
 
                         // Increment TimesSpawned and trigger cooldown if necessary
                         bossSpawn.TimesSpawned++;
@@ -393,10 +410,13 @@ namespace Donuts
                     bossSpawn.IsSpawnPending = false; // Reset pending if no spawn points available
                 }
             }
-
-            // Yield to ensure loop iteration respects the game's update cycle
-            await UniTask.Yield(PlayerLoopTiming.Update);
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogError($"{methodName}: Exception occurred while spawning boss: {bossSpawn.BossName}. Message: {ex.Message}");
+                UnityEngine.Debug.LogError($"{methodName}: Stack Trace: {ex.StackTrace}");
+            }
         }
+
 
         // Checks trigger distance and spawn chance
         private bool CanSpawn(BotWave botWave, string wildSpawnType)
