@@ -34,13 +34,19 @@ namespace Donuts
 
         internal static Dictionary<string, WildSpawnType> OriginalBotSpawnTypes;
 
-        internal static ConcurrentBag<BotSpawnInfo> botSpawnInfos{ get; set;}
+        internal static ConcurrentBag<BotSpawnInfo> botSpawnInfos
+        {
+            get; set;
+        }
 
         private HashSet<string> usedZonesPMC = new HashSet<string>();
         private HashSet<string> usedZonesSCAV = new HashSet<string>();
         private HashSet<string> usedZonesBoss = new HashSet<string>();
 
-        public static ConcurrentBag<PrepBotInfo> BotInfos { get; set; }
+        public static ConcurrentBag<PrepBotInfo> BotInfos
+        {
+            get; set;
+        }
 
         public static AllMapsZoneConfig allMapsZoneConfig;
 
@@ -53,6 +59,8 @@ namespace Donuts
         {
             get; private set;
         }
+
+        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(5); // Limit to 5 concurrent tasks
 
         public DonutsBotPrep()
         {
@@ -393,7 +401,11 @@ namespace Donuts
                     usedZones.Add(selectedZone);
 
                     var botInfo = new PrepBotInfo(wildSpawnType, difficulty, side, groupSize > 1, groupSize);
-                    createBotTasks.Add(CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize, cancellationToken));
+
+                    // Control concurrency with SemaphoreSlim
+                    await semaphore.WaitAsync(cancellationToken); // Acquire a slot
+                    createBotTasks.Add(CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize, cancellationToken)
+                        .ContinueWith(t => semaphore.Release())); // Release slot when task completes
 
                     BotInfos.Add(botInfo);
 
@@ -416,7 +428,6 @@ namespace Donuts
             }
         }
 
-
         private async UniTask InitializeBossSpawns(StartingBotConfig startingBotConfig, string maplocation, CancellationToken cancellationToken)
         {
             Logger.LogInfo("Starting Initialize Boss Spawns");
@@ -429,7 +440,6 @@ namespace Donuts
                 var bosses = MapBossConfig.BOSSES;
                 if (bosses != null && bosses.Any())
                 {
-
                     foreach (var bossSpawn in bosses)
                     {
                         Logger.LogInfo($"Configuring boss spawn: {bossSpawn.BossName} with chance {bossSpawn.BossChance}");
@@ -468,9 +478,14 @@ namespace Donuts
 
                         usedZonesBoss.Add(selectedZone);
 
+                        // Control concurrency with SemaphoreSlim
+                        await semaphore.WaitAsync(cancellationToken); // Acquire a slot
 
-                        // Create Boss and Support Bots
-                        bossSpawnTasks.Add(ScheduleBossSpawn(bossSpawn, coordinates, cancellationToken, selectedZone));
+                        // Add task to list
+                        var task = ScheduleBossSpawn(bossSpawn, coordinates, cancellationToken, selectedZone)
+                            .ContinueWith(async () => semaphore.Release());
+
+                        bossSpawnTasks.Add(task);
                     }
 
                     // Await all boss spawn tasks
@@ -664,8 +679,10 @@ namespace Donuts
 
                 AddBotSpawnInfo(supportWildSpawnType, 1, offsetPositionList, supportDifficulty, supportSide, selectedZone);
 
-                // Create and add bot
-                var supportBot = await CreateAndAddBot(supportInfo, supportData, offsetPosition, cancellationToken, true);
+                // Control concurrency with SemaphoreSlim
+                await semaphore.WaitAsync(cancellationToken); // Acquire a slot
+                await CreateAndAddBot(supportInfo, supportData, offsetPosition, cancellationToken, true)
+                    .ContinueWith(t => semaphore.Release()); // Release slot when task completes
 
                 if (supportInfo.Bots == null)
                 {
@@ -731,61 +748,67 @@ namespace Donuts
         {
             string methodName = nameof(ScheduleWaveBossSpawnDirectly);
             UnityEngine.Debug.Log($"{methodName}: Starting wave boss spawn for {bossSpawn.BossName}.");
-
-            // Get random coordinate from coordinates
-            if (coordinates == null || coordinates.Count == 0)
+            try
             {
-                UnityEngine.Debug.LogError($"{methodName}: No coordinates available for spawning.");
-                return;
+                // Get random coordinate from coordinates
+                if (coordinates == null || coordinates.Count == 0)
+                {
+                    UnityEngine.Debug.LogError($"{methodName}: No coordinates available for spawning.");
+                    return;
+                }
+
+                var randomCoordinate = coordinates.Random();
+                Vector3 centralPosition = randomCoordinate;
+
+                UnityEngine.Debug.Log($"{methodName}: Selected random coordinate {randomCoordinate} for boss spawn.");
+
+
+                // Create wave boss and get the central position for supports
+                var waveBossCreationData = await CreateWaveBossProfile(bossSpawn, cancellationToken, selectedZone);
+
+                if (waveBossCreationData == null)
+                {
+                    UnityEngine.Debug.LogError($"{methodName}: Failed to create wave boss profile for {bossSpawn.BossName}.");
+                    return;
+                }
+
+                if (waveBossCreationData.Profiles.Count == 0)
+                {
+                    UnityEngine.Debug.LogError($"{methodName}: No profiles found for wave boss {bossSpawn.BossName}.");
+                    return;
+                }
+                waveBossCreationData.AddPosition(centralPosition, UnityEngine.Random.Range(0, 10000));
+
+                UnityEngine.Debug.Log($"{methodName}: Successfully created wave boss profile.");
+
+                UnityEngine.Debug.Log($"{methodName}: Central position for spawning is {centralPosition}.");
+
+                // Directly activate wave boss
+                UnityEngine.Debug.Log($"{methodName}: Activating boss spawn: {bossSpawn.BossName} at position {centralPosition}.");
+
+                var closestBotZone = botSpawnerClass?.GetClosestZone(waveBossCreationData.GetPosition().position, out _);
+                var cts = new CancellationTokenSource();
+                await BotSpawnHelper.ActivateBot(closestBotZone, waveBossCreationData, cts, cancellationToken);
+
+                UnityEngine.Debug.Log($"{methodName}: Boss {bossSpawn.BossName} activated successfully.");
+
+                // Schedule support units
+                if (bossSpawn.Supports != null && bossSpawn.Supports.Any())
+                {
+                    UnityEngine.Debug.Log($"{methodName}: Scheduling support units for {bossSpawn.BossName}.");
+                    await ScheduleWaveSupportsAsync(bossSpawn.Supports, centralPosition, coordinates, selectedZone, cancellationToken);
+                }
+                else
+                {
+                    UnityEngine.Debug.Log($"{methodName}: No support units to schedule for {bossSpawn.BossName}.");
+                }
+
+                UnityEngine.Debug.Log($"{methodName}: Completed wave boss spawn for {bossSpawn.BossName}.");
             }
-
-            var randomCoordinate = coordinates.Random();
-            Vector3 centralPosition = randomCoordinate;
-
-            UnityEngine.Debug.Log($"{methodName}: Selected random coordinate {randomCoordinate} for boss spawn.");
-
-
-            // Create wave boss and get the central position for supports
-            var waveBossCreationData = await CreateWaveBossProfile(bossSpawn, cancellationToken, selectedZone);
-
-            if (waveBossCreationData == null)
+            catch (Exception ex)
             {
-                UnityEngine.Debug.LogError($"{methodName}: Failed to create wave boss profile for {bossSpawn.BossName}.");
-                return;
+                UnityEngine.Debug.LogError($"{methodName}: Exception occurred: {ex.Message}\n{ex.StackTrace}");
             }
-
-            if (waveBossCreationData.Profiles.Count == 0)
-            {
-                UnityEngine.Debug.LogError($"{methodName}: No profiles found for wave boss {bossSpawn.BossName}.");
-                return;
-            }
-            waveBossCreationData.AddPosition(centralPosition, UnityEngine.Random.Range(0, 10000));
-                    
-            UnityEngine.Debug.Log($"{methodName}: Successfully created wave boss profile.");
-
-            UnityEngine.Debug.Log($"{methodName}: Central position for spawning is {centralPosition}.");
-
-            // Directly activate wave boss
-            UnityEngine.Debug.Log($"{methodName}: Activating boss spawn: {bossSpawn.BossName} at position {centralPosition}.");
-
-            var closestBotZone = botSpawnerClass?.GetClosestZone(waveBossCreationData.GetPosition().position, out _);
-            var cts = new CancellationTokenSource();
-            await BotSpawnHelper.ActivateBot(closestBotZone, waveBossCreationData, cts, cancellationToken);
-
-            UnityEngine.Debug.Log($"{methodName}: Boss {bossSpawn.BossName} activated successfully.");
-
-            // Schedule support units
-            if (bossSpawn.Supports != null && bossSpawn.Supports.Any())
-            {
-                UnityEngine.Debug.Log($"{methodName}: Scheduling support units for {bossSpawn.BossName}.");
-                await ScheduleWaveSupportsAsync(bossSpawn.Supports, centralPosition, coordinates, selectedZone, cancellationToken);
-            }
-            else
-            {
-                UnityEngine.Debug.Log($"{methodName}: No support units to schedule for {bossSpawn.BossName}.");
-            }
-
-            UnityEngine.Debug.Log($"{methodName}: Completed wave boss spawn for {bossSpawn.BossName}.");
         }
 
         internal static async UniTask<BotCreationDataClass> CreateWaveBossProfile(BossSpawn bossSpawn, CancellationToken cancellationToken, string selectedZone)
@@ -880,7 +903,11 @@ namespace Donuts
 #if DEBUG
                     Logger.LogWarning($"Replenishing group bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: {botInfo.GroupSize}");
 #endif
-                    tasks.Add(CreateBot(botInfo, true, botInfo.GroupSize, cancellationToken));
+                    // Control concurrency with SemaphoreSlim
+                    await semaphore.WaitAsync(cancellationToken); // Acquire a slot
+                    tasks.Add(CreateBot(botInfo, true, botInfo.GroupSize, cancellationToken)
+                        .ContinueWith(t => semaphore.Release())); // Release slot when task completes
+
                     groupBotsCount++;
                 }
                 else if (!botInfo.IsGroup && singleBotsCount < 3)
@@ -888,7 +915,11 @@ namespace Donuts
 #if DEBUG
                     Logger.LogWarning($"Replenishing single bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: 1");
 #endif
-                    tasks.Add(CreateBot(botInfo, false, 1, cancellationToken));
+                    // Control concurrency with SemaphoreSlim
+                    await semaphore.WaitAsync(cancellationToken); // Acquire a slot
+                    tasks.Add(CreateBot(botInfo, false, 1, cancellationToken)
+                        .ContinueWith(t => semaphore.Release())); // Release slot when task completes
+
                     singleBotsCount++;
                 }
 
@@ -952,7 +983,6 @@ namespace Donuts
                 return null;
             }
         }
-
 
         internal static List<BotCreationDataClass> GetWildSpawnData(WildSpawnType spawnType, BotDifficulty botDifficulty)
         {
@@ -1023,6 +1053,7 @@ namespace Donuts
             // Cancel any ongoing tasks
             ctsprep?.Cancel();
             ctsprep?.Dispose();
+            ctsprep = null; // Set to null to ensure proper garbage collection
 
             // Remove event handlers
             if (botSpawnerClass != null)
@@ -1046,22 +1077,26 @@ namespace Donuts
             selectionName = null;
             maplocation = null;
             mapName = null;
-            OriginalBotSpawnTypes = null;
-            botSpawnInfos = null;
-            BotInfos = null;
-            allMapsZoneConfig = null;
 
-            // Clear collections
-            usedZonesPMC.Clear();
-            usedZonesSCAV.Clear();
+            // Reset static collections
+            OriginalBotSpawnTypes?.Clear();
+            OriginalBotSpawnTypes = null;
+
+            // Create new instances of ConcurrentBag to clear them
+            botSpawnInfos = new ConcurrentBag<BotSpawnInfo>();
+            BotInfos = new ConcurrentBag<PrepBotInfo>();
+
+            // Clear other collections
+            usedZonesPMC?.Clear();
+            usedZonesSCAV?.Clear();
+            usedZonesBoss?.Clear();
 
             // Release resources
+            allMapsZoneConfig = null;
             gameWorld = null;
             botCreator = null;
             botSpawnerClass = null;
             mainplayer = null;
         }
     }
-
-
 }

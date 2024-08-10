@@ -20,7 +20,7 @@ namespace Donuts
     {
         internal CancellationTokenSource cts;
 
-        internal static BotWavesConfig botWavesConfig = new BotWavesConfig();
+        internal static BotWavesConfig botWavesConfig;
         internal static List<BotWave> allBotWaves;
         internal static bool maxRespawnReachedPMC;
         internal static bool maxRespawnReachedSCAV;
@@ -35,7 +35,7 @@ namespace Donuts
         internal static GameWorld gameWorld;
         internal static BotSpawner botSpawnerClass;
         internal static IBotCreator botCreator;
-        internal static List<Player> playerList = new List<Player>();
+        internal static List<Player> playerList;
 
         //used in DonutInitialization
         internal static int PMCBotLimit;
@@ -108,6 +108,8 @@ namespace Donuts
 
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             botCreator = AccessTools.Field(botSpawnerClass.GetType(), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
+            playerList = new List<Player>();
+            botWavesConfig = new BotWavesConfig();
 
             DonutInitialization.InitializeComponent();
 
@@ -413,7 +415,7 @@ namespace Donuts
             catch (Exception ex)
             {
                 UnityEngine.Debug.LogError($"{methodName}: Exception occurred while spawning boss: {bossSpawn.BossName}. Message: {ex.Message}");
-                UnityEngine.Debug.LogError($"{methodName}: Stack Trace: {ex.StackTrace}");
+                //UnityEngine.Debug.LogError($"{methodName}: Stack Trace: {ex.StackTrace}");
             }
         }
 
