@@ -4,24 +4,24 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using SPT.Reflection.Patching;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using Donuts.Models;
 using Donuts.Patches;
+using dvize.Donuts.Patches;
 using EFT;
 using EFT.Communications;
 using Newtonsoft.Json;
+using SPT.Reflection.Patching;
 using UnityEngine;
-using dvize.Donuts.Patches;
 
 //disable the ide0007 warning for the entire file
 #pragma warning disable IDE0007
 
 namespace Donuts
 {
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.6.1")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.6.2")]
     [BepInDependency("com.SPT.core", "3.9.0")]
     [BepInDependency("xyz.drakia.waypoints")]
     [BepInDependency("com.Arys.UnityToolkit")]
@@ -64,6 +64,8 @@ namespace Donuts
             new PlayerFireControlPatchGetter().Enable();
             new PlayerFireControlPatchSetter().Enable();
 
+            new GetClosestPointPatch().Enable();
+            new PointSettedPatch().Enable();
             ImportConfig();
             await SetupScenariosUI();
         }

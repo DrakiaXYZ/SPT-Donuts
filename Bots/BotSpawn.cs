@@ -7,8 +7,10 @@ using UnityEngine;
 using System.Linq;
 using static Donuts.DefaultPluginVars;
 using static Donuts.DonutComponent;
+using static Donuts.DonutsBotPrep;
 using System;
 using BepInEx.Logging;
+using System.Collections.Concurrent;
 
 namespace Donuts
 {
@@ -27,7 +29,7 @@ namespace Donuts
             Logger ??= BepInEx.Logging.Logger.CreateLogSource(nameof(DonutBotSpawn));
         }
 
-        internal static async UniTask SpawnBotsFromInfo(List<BotSpawnInfo> botSpawnInfos, CancellationToken cancellationToken)
+        internal static async UniTask SpawnBotsFromInfo(ConcurrentBag<BotSpawnInfo> botSpawnInfos, CancellationToken cancellationToken)
         {
             if (botSpawnInfos == null)
             {
@@ -120,7 +122,7 @@ namespace Donuts
 
             foreach (var coordinate in coordinates)
             {
-                if (botSpawnInfo.BotType.IsBoss() || botSpawnInfo.BotType.IsFollower())
+                if (WildSpawnTypeDictionaries.IsBoss(wildSpawnType) || WildSpawnTypeDictionaries.IsFollower(wildSpawnType))
                 {
                     Debug.Log($"SpawnStartingBots: Boss or Follower bot detected, skipping spawn checks.");
                     await BotSpawnHelper.ActivateStartingBots(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, coordinate, botDifficulty, groupSize, zone, cancellationToken);

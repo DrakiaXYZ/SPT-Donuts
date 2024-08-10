@@ -17,6 +17,7 @@ namespace Donuts
         internal static Setting<bool> DespawnEnabledSCAV;
         internal static Setting<bool> HardCapEnabled;
         internal static Setting<float> coolDownTimer;
+        internal static Setting<int> bossWaveCooldownTimer;
         internal static Setting<string> pmcGroupChance;
         internal static Setting<string> scavGroupChance;
         internal static Setting<string> botDifficultiesPMC;
@@ -33,7 +34,7 @@ namespace Donuts
         internal static Setting<bool> hardStopOptionSCAV;
         internal static Setting<int> hardStopTimeSCAV;
         internal static Setting<int> hardStopPercentSCAV;
-
+        
         internal static Setting<bool> hotspotBoostPMC;
         internal static Setting<bool> hotspotBoostSCAV;
         internal static Setting<bool> hotspotIgnoreHardCapPMC;
@@ -224,6 +225,15 @@ namespace Donuts
                 300f,
                 0f,
                 1000f);
+
+            bossWaveCooldownTimer = new Setting<int>(
+                "Boss Wave Cool Down Timer",
+                "How long to delay before it can check to see whether to spawn bosses after MaxSpawnsBeforeCoolDown is reached (should be a high value).",
+                600,
+                600,
+                0,
+                3000
+                );
 
             pmcGroupChance = new Setting<string>(
                 "Donuts PMC Group Chance",

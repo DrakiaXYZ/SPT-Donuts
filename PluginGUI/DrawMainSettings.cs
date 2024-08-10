@@ -223,6 +223,9 @@ namespace Donuts
             DefaultPluginVars.coolDownTimer.Value = Slider(DefaultPluginVars.coolDownTimer.Name, DefaultPluginVars.coolDownTimer.ToolTipText, DefaultPluginVars.coolDownTimer.Value, 0f, 1000f);
             GUILayout.Space(10);
 
+            DefaultPluginVars.bossWaveCooldownTimer.Value = Slider(DefaultPluginVars.bossWaveCooldownTimer.Name, DefaultPluginVars.bossWaveCooldownTimer.ToolTipText, DefaultPluginVars.bossWaveCooldownTimer.Value, 0, 1000);
+            GUILayout.Space(10);
+
             DefaultPluginVars.hotspotBoostPMC.Value = Toggle(DefaultPluginVars.hotspotBoostPMC.Name, DefaultPluginVars.hotspotBoostPMC.ToolTipText, DefaultPluginVars.hotspotBoostPMC.Value);
             GUILayout.Space(10);
 

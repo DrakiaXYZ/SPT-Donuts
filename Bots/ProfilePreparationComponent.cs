@@ -1,17 +1,15 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 using BepInEx.Logging;
 using Comfort.Common;
 using Cysharp.Threading.Tasks;
 using Donuts.Models;
 using EFT;
-using EFT.Bots;
-using EFT.InventoryLogic;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -36,19 +34,13 @@ namespace Donuts
 
         internal static Dictionary<string, WildSpawnType> OriginalBotSpawnTypes;
 
-        internal static List<BotSpawnInfo> botSpawnInfos
-        {
-            get; set;
-        }
+        internal static ConcurrentBag<BotSpawnInfo> botSpawnInfos{ get; set;}
 
         private HashSet<string> usedZonesPMC = new HashSet<string>();
         private HashSet<string> usedZonesSCAV = new HashSet<string>();
         private HashSet<string> usedZonesBoss = new HashSet<string>();
 
-        public static List<PrepBotInfo> BotInfos
-        {
-            get; set;
-        }
+        public static ConcurrentBag<PrepBotInfo> BotInfos { get; set; }
 
         public static AllMapsZoneConfig allMapsZoneConfig;
 
@@ -91,8 +83,8 @@ namespace Donuts
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
             mainplayer = gameWorld?.MainPlayer;
             OriginalBotSpawnTypes = new Dictionary<string, WildSpawnType>();
-            BotInfos = new List<PrepBotInfo>();
-            botSpawnInfos = new List<BotSpawnInfo>();
+            BotInfos = new ConcurrentBag<PrepBotInfo>();
+            botSpawnInfos = new ConcurrentBag<BotSpawnInfo>();
             timeSinceLastReplenish = 0;
             IsBotPreparationComplete = false;
 
@@ -140,8 +132,8 @@ namespace Donuts
             // Gather tasks for initializing bot infos
             var botInitializationTasks = new List<UniTask>
             {
-                //InitializeBotInfos(startingBotConfig, maplocation, "PMC", ctsprep.Token),
-                //InitializeBotInfos(startingBotConfig, maplocation, "SCAV", ctsprep.Token),
+                InitializeBotInfos(startingBotConfig, maplocation, "PMC", ctsprep.Token),
+                InitializeBotInfos(startingBotConfig, maplocation, "SCAV", ctsprep.Token),
                 InitializeBossSpawns(startingBotConfig, maplocation, ctsprep.Token)
             };
 
@@ -355,7 +347,7 @@ namespace Donuts
                 var usedZones = botType == "PMC" ? usedZonesPMC : usedZonesSCAV;
                 var random = new System.Random();
                 var createBotTasks = new List<UniTask>();
-                
+
                 while (totalBots < maxBots)
                 {
                     int groupSize = BotSpawnHelper.DetermineMaxBotCount(botType.ToLower(), mapBotConfig.MinGroupSize, mapBotConfig.MaxGroupSize);
@@ -503,7 +495,7 @@ namespace Donuts
                 case "BEAR":
                     return WildSpawnType.pmcBEAR;
                 default:
-                    return BotSpawnHelper.DeterminePMCFactionBasedOnRatio();
+                    return DeterminePMCFactionBasedOnRatio();
             }
         }
 
@@ -566,15 +558,6 @@ namespace Donuts
                 return null;
             }
 
-            // Tag each bot in the group as a support if applicable
-            if (isSupport)
-            {
-                foreach (var profile in bot.Profiles)
-                {
-                    BotSupportTracker.AddBot(profile.Id, BotSourceType.Support);
-                }
-            }
-
             botInfo.Bots = bot;
             Logger.LogInfo($"CreateBot: Bot created and assigned successfully: {bot.Profiles.Count} profiles loaded.");
 
@@ -583,7 +566,23 @@ namespace Donuts
 
         private async UniTask ScheduleBossSpawn(BossSpawn bossSpawn, List<Vector3> coordinates, CancellationToken cancellationToken, string selectedZone)
         {
-            Logger.LogInfo($"Scheduling boss spawn: {bossSpawn.BossName}");
+            Logger.LogInfo($"Attempting to schedule boss spawn: {bossSpawn.BossName} with delay of {bossSpawn.TimeDelay} seconds");
+
+            // Delay before processing the spawn check
+            if (bossSpawn.TimeDelay > 0)
+            {
+                await UniTask.Delay(TimeSpan.FromSeconds(bossSpawn.TimeDelay), cancellationToken: cancellationToken);
+            }
+
+            // Check if the boss should spawn based on BossChance
+            var randomValue = UnityEngine.Random.Range(0, 100);
+            if (randomValue >= bossSpawn.BossChance)
+            {
+                Logger.LogInfo($"Boss spawn cancelled: {bossSpawn.BossName} (Chance: {bossSpawn.BossChance}%, Rolled: {randomValue})");
+                return;
+            }
+
+            Logger.LogInfo($"Scheduling boss spawn: {bossSpawn.BossName} (Chance: {bossSpawn.BossChance}%, Rolled: {randomValue})");
 
             // Create boss and get the central position for supports
             var bossCreationData = await CreateBoss(bossSpawn, coordinates, cancellationToken, selectedZone);
@@ -602,12 +601,26 @@ namespace Donuts
             }
         }
 
-        private BotsGroup BossGroupAction(BotOwner botOwner, BotZone botZone)
+        internal static async UniTask ScheduleWaveBossSpawn(BossSpawn bossSpawn, List<Vector3> coordinates, CancellationToken cancellationToken, string selectedZone)
         {
-            // Implement group action logic for when the boss is spawned
-            return null;
-        }
+            Logger.LogInfo($"Scheduling wave boss spawn: {bossSpawn.BossName}");
 
+            // Create boss and get the central position for supports
+            var bossCreationData = await CreateBoss(bossSpawn, coordinates, cancellationToken, selectedZone);
+
+            Logger.LogInfo($"ScheduleWaveBossSpawn: Completed creating boss: {bossSpawn.BossName}");
+
+            if (bossCreationData != null)
+            {
+                var centralPosition = bossCreationData.GetPosition();
+
+                // Schedule support units
+                if (bossSpawn.Supports != null && bossSpawn.Supports.Any())
+                {
+                    await ScheduleSupportsAsync(bossSpawn.Supports, centralPosition.position, coordinates, selectedZone, cancellationToken);
+                }
+            }
+        }
         internal static async UniTask<BotCreationDataClass> CreateBoss(BossSpawn bossSpawn, List<Vector3> coordinates, CancellationToken cancellationToken, string selectedZone)
         {
             if (botCreator == null)
@@ -787,28 +800,44 @@ namespace Donuts
 
         private static bool NeedReplenishment(PrepBotInfo botInfo)
         {
-            return botInfo.Bots == null || botInfo.Bots.Profiles.Count == 0;
+            return botInfo.Bots == null || botInfo.Bots.Profiles.Count == 0 || botInfo.Bots.Profiles == null;
         }
 
         internal static BotCreationDataClass FindCachedBots(WildSpawnType spawnType, BotDifficulty difficulty, int targetCount)
         {
             if (DonutsBotPrep.BotInfos == null)
             {
-                Logger.LogError("BotInfos is null");
+                Logger.LogError("FindCachedBots: BotInfos is null.");
                 return null;
             }
 
             try
             {
-                // Find the bot info that matches the spawn type and difficulty
-                var botInfo = DonutsBotPrep.BotInfos.FirstOrDefault(b => b.SpawnType == spawnType && b.Difficulty == difficulty && b.Bots != null && b.Bots.Profiles.Count == targetCount);
+                // Find the bot info that matches the spawn type, difficulty, and has the required profile count
+                var botInfo = DonutsBotPrep.BotInfos.FirstOrDefault(b =>
+                    b.SpawnType == spawnType &&
+                    b.Difficulty == difficulty &&
+                    b.Bots != null &&
+                    b.Bots.Profiles != null &&
+                    b.Bots.Profiles.Count == targetCount);
 
                 if (botInfo != null)
                 {
-                    return botInfo.Bots;
+                    // Ensure that the profiles are not empty
+                    if (botInfo.Bots.Profiles.Any())
+                    {
+                        return botInfo.Bots;
+                    }
+                    else
+                    {
+                        Logger.LogWarning($"Cached bot found but profiles are empty for spawn type {spawnType}, difficulty {difficulty}.");
+                    }
+                }
+                else
+                {
+                    Logger.LogWarning($"No cached bots found for spawn type {spawnType}, difficulty {difficulty}, and target count {targetCount}.");
                 }
 
-                Logger.LogWarning($"No cached bots found for spawn type {spawnType}, difficulty {difficulty}, and target count {targetCount}");
                 return null;
             }
             catch (Exception ex)
@@ -844,6 +873,25 @@ namespace Donuts
                 Logger.LogWarning($"Could not find original profile for bot {bot.Profile.Nickname}");
 #endif
                 return null;
+            }
+        }
+
+        internal static WildSpawnType DeterminePMCFactionBasedOnRatio()
+        {
+            // Retrieve the PMC faction ratio from the configuration (e.g., a float value between 0.0 and 1.0)
+            float pmcFactionRatio = DefaultPluginVars.pmcFactionRatio.Value;
+
+            // Generate a random number between 0 and 1
+            float randomValue = UnityEngine.Random.value;
+
+            // Determine the faction based on the ratio
+            if (randomValue < pmcFactionRatio)
+            {
+                return WildSpawnType.pmcUSEC;
+            }
+            else
+            {
+                return WildSpawnType.pmcBEAR;
             }
         }
         public static BotDifficulty GetRandomDifficulty(List<BotDifficulty> difficulties)
@@ -909,36 +957,5 @@ namespace Donuts
         }
     }
 
-    public enum BotSourceType
-    {
-        None,
-        Support
-    }
 
-    public static class BotSupportTracker
-    {
-        internal static Dictionary<string, BotSourceType> botSourceTypeMap = new Dictionary<string, BotSourceType>();
-
-        public static void AddBot(string botId, BotSourceType sourceType)
-        {
-            if (!botSourceTypeMap.ContainsKey(botId))
-            {
-                botSourceTypeMap[botId] = sourceType;
-            }
-        }
-
-        //remove bot method
-        public static void RemoveBot(string botId)
-        {
-            if (botSourceTypeMap.ContainsKey(botId))
-            {
-                botSourceTypeMap.Remove(botId);
-            }
-        }
-
-        public static BotSourceType GetBotSourceType(string botId)
-        {
-            return botSourceTypeMap.TryGetValue(botId, out var sourceType) ? sourceType : BotSourceType.None;
-        }
-    }
 }

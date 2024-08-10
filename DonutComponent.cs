@@ -201,14 +201,13 @@ namespace Donuts
                 hasSpawnedStartingBots = true;
                 if (DonutsBotPrep.botSpawnInfos != null && DonutsBotPrep.botSpawnInfos.Any())
                 {
-                    //log the contents of botSpawnInfos
+                    // Log the contents of botSpawnInfos
                     foreach (var botSpawnInfo in DonutsBotPrep.botSpawnInfos)
                     {
                         Logger.LogDebug($"BotSpawnInfo: {botSpawnInfo.BotType.ToString()} , GroupSize: {botSpawnInfo.GroupSize}, CoordinateCount: {botSpawnInfo.Coordinates.Count()}");
                     }
 
                     await DonutBotSpawn.SpawnBotsFromInfo(DonutsBotPrep.botSpawnInfos, cancellationToken);
-                    
                 }
             }
 
@@ -223,77 +222,181 @@ namespace Donuts
             }
 
             await SpawnBotWaves(botWavesConfig.Maps[DonutsBotPrep.maplocation], cancellationToken);
+            await SpawnBossWaves(botWavesConfig.Maps[DonutsBotPrep.maplocation], cancellationToken);
         }
 
         private async UniTask SpawnBotWaves(MapBotWaves botWaves, CancellationToken cancellationToken)
         {
-            while (!cancellationToken.IsCancellationRequested)
+            if (cancellationToken.IsCancellationRequested)
             {
-                bool anySpawned = false;
+                UnityEngine.Debug.Log("Cancellation requested, not proceeding with bot spawn checks.");
+                return;
+            }
 
-                foreach (var botWave in allBotWaves)
+            bool anySpawned = false;
+
+            if (isInBattle && timeSinceLastHit < battleStateCoolDown.Value)
+            {
+                //Logger.LogDebug("In battle state cooldown, breaking the loop.");
+                return;
+            }
+
+            foreach (var botWave in allBotWaves)
+            {
+                if (botWave.ShouldSpawn())
                 {
-                    if (botWave.ShouldSpawn())
+                    var wildSpawnType = botWaves.PMC.Contains(botWave) ? "pmc" : "scav";
+
+                    if (CanSpawn(botWave, wildSpawnType))
                     {
-                        if (isInBattle && timeSinceLastHit < battleStateCoolDown.Value)
+                        var spawnPointsDict = DonutComponent.GetSpawnPointsForZones(DonutsBotPrep.allMapsZoneConfig, DonutsBotPrep.maplocation, botWave.Zones);
+
+                        if (spawnPointsDict.Any())
                         {
-                            //Logger.LogDebug("In battle state cooldown, breaking the loop.");
-                            break;
-                        }
+                            var random = new System.Random();
+                            var zoneKeys = spawnPointsDict.Keys.OrderBy(_ => random.Next()).ToList();
 
-                        var wildSpawnType = botWaves.PMC.Contains(botWave) ? "pmc" : "scav";
-
-                        if (CanSpawn(botWave, wildSpawnType))
-                        {
-                            var spawnPointsDict = DonutComponent.GetSpawnPointsForZones(DonutsBotPrep.allMapsZoneConfig, DonutsBotPrep.maplocation, botWave.Zones);
-
-                            if (spawnPointsDict.Any())
+                            if (zoneKeys.Any())
                             {
-                                var random = new System.Random();
-                                var zoneKeys = spawnPointsDict.Keys.OrderBy(_ => random.Next()).ToList();
+                                var randomZone = zoneKeys.First();
+                                var coordinates = spawnPointsDict[randomZone].OrderBy(_ => random.Next()).ToList();
 
-                                if (zoneKeys.Any())
+                                bool isHotspotZone = randomZone.IndexOf("hotspot", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                                if ((isHotspotZone && wildSpawnType == "pmc" && hotspotBoostPMC.Value) ||
+                                    (isHotspotZone && wildSpawnType == "scav" && hotspotBoostSCAV.Value))
                                 {
-                                    var randomZone = zoneKeys.First();
-                                    var coordinates = spawnPointsDict[randomZone].OrderBy(_ => random.Next()).ToList();
+                                    Logger.LogDebug($"{randomZone} is a hotspot; hotspot boost is enabled, setting spawn chance to 100");
+                                    botWave.SpawnChance = 100;
+                                }
 
-                                    bool isHotspotZone = randomZone.IndexOf("hotspot", StringComparison.OrdinalIgnoreCase) >= 0;
-
-                                    if ((isHotspotZone && wildSpawnType == "pmc" && hotspotBoostPMC.Value) ||
-                                        (isHotspotZone && wildSpawnType == "scav" && hotspotBoostSCAV.Value))
+                                foreach (var coordinate in coordinates)
+                                {
+                                    if (BotSpawnHelper.IsWithinBotActivationDistance(botWave, coordinate))
                                     {
-                                        Logger.LogDebug($"{randomZone} is a hotspot; hotspot boost is enabled, setting spawn chance to 100");
-                                        botWave.SpawnChance = 100;
-                                    }
-
-                                    foreach (var coordinate in coordinates)
-                                    {
-                                        if (BotSpawnHelper.IsWithinBotActivationDistance(botWave, coordinate))
-                                        {
-                                            Logger.LogDebug($"Triggering spawn for botWave: {botWave} at {randomZone}, {coordinate}");
-                                            await TriggerSpawn(botWave, randomZone, coordinate, wildSpawnType, coordinates, cancellationToken);
-                                            anySpawned = true;
-                                            break;
-                                        }
+                                        Logger.LogDebug($"Triggering spawn for botWave: {botWave} at {randomZone}, {coordinate}");
+                                        await TriggerSpawn(botWave, randomZone, coordinate, wildSpawnType, coordinates, cancellationToken);
+                                        anySpawned = true;
+                                        break;
                                     }
                                 }
                             }
                         }
-
-                        // if CanSpawn if false then we need to reset the timers for this wave
-                        ResetGroupTimers(botWave.GroupNum, wildSpawnType);
                     }
-                }
 
-                await UniTask.Yield(PlayerLoopTiming.Update);
-
-                if (!anySpawned)
-                {
-                    await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: cancellationToken);
+                    // if CanSpawn if false then we need to reset the timers for this wave
+                    ResetGroupTimers(botWave.GroupNum, wildSpawnType);
                 }
             }
-        }
 
+            await UniTask.Yield(PlayerLoopTiming.Update);
+
+            if (!anySpawned)
+            {
+                await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: cancellationToken);
+            }
+
+        }
+        private async UniTask SpawnBossWaves(MapBotWaves botWaves, CancellationToken cancellationToken)
+        {
+            string methodName = nameof(SpawnBossWaves);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                UnityEngine.Debug.Log($"{methodName}: Cancellation requested, not proceeding with boss spawn checks.");
+                return;
+            }
+
+            if (isInBattle && timeSinceLastHit < battleStateCoolDown.Value)
+            {
+                //UnityEngine.Debug.Log($"{methodName}: In battle state cooldown, breaking the loop.");
+                return;
+            }
+
+            foreach (var bossSpawn in botWaves.BOSSES)
+            {
+                // Update cooldown for the boss
+                bossSpawn.UpdateCooldown(Time.deltaTime, DefaultPluginVars.bossWaveCooldownTimer.Value);
+
+                // Check if the boss should spawn and not already pending
+                if (!bossSpawn.ShouldSpawn())
+                {
+                    //UnityEngine.Debug.Log($"{methodName}: Skipping spawn for {bossSpawn.BossName}: in cooldown or spawn already pending.");
+                    continue;
+                }
+
+                UnityEngine.Debug.Log($"{methodName}: Checking spawn chance for boss: {bossSpawn.BossName}");
+
+                // Check if the boss should spawn based on BossChance
+                var randomValue = UnityEngine.Random.Range(0, 100);
+                if (randomValue >= bossSpawn.BossChance)
+                {
+                    UnityEngine.Debug.Log($"{methodName}: Boss spawn cancelled due to chance: {bossSpawn.BossName} (Chance: {bossSpawn.BossChance}%, Rolled: {randomValue})");
+                    continue;
+                }
+
+                UnityEngine.Debug.Log($"{methodName}: Scheduling boss spawn: {bossSpawn.BossName}");
+
+                // Set the spawn as pending to prevent multiple delay timers
+                bossSpawn.IsSpawnPending = true;
+
+                // Delay before processing the spawn check unless IgnoreTimerFirstSpawn is true and it's the first spawn
+                if (!(bossSpawn.IgnoreTimerFirstSpawn && bossSpawn.TimesSpawned == 0))
+                {
+                    UnityEngine.Debug.Log($"{methodName}: Waiting for delay: {bossSpawn.TimeDelay} seconds before spawning {bossSpawn.BossName}.");
+                    await UniTask.Delay(TimeSpan.FromSeconds(bossSpawn.TimeDelay), cancellationToken: cancellationToken);
+                }
+
+                // Get potential spawn coordinates within the specified zones
+                var spawnPointsDict = DonutComponent.GetSpawnPointsForZones(DonutsBotPrep.allMapsZoneConfig, DonutsBotPrep.maplocation, bossSpawn.Zones);
+
+                if (spawnPointsDict.Any())
+                {
+                    UnityEngine.Debug.Log($"{methodName}: Found {spawnPointsDict.Count} potential zones for spawning {bossSpawn.BossName}.");
+
+                    var random = new System.Random();
+                    var zoneKeys = spawnPointsDict.Keys.OrderBy(_ => random.Next()).ToList();
+
+                    if (zoneKeys.Any())
+                    {
+                        var randomZone = zoneKeys.First();
+                        var coordinates = spawnPointsDict[randomZone].OrderBy(_ => random.Next()).ToList();
+
+                        UnityEngine.Debug.Log($"{methodName}: Selected zone {randomZone} for boss {bossSpawn.BossName}, scheduling spawn.");
+
+                        // Schedule the boss spawn using the wave-specific method
+                        await DonutsBotPrep.ScheduleWaveBossSpawn(bossSpawn, coordinates, cancellationToken, randomZone);
+
+                        // Increment TimesSpawned and trigger cooldown if necessary
+                        bossSpawn.TimesSpawned++;
+                        UnityEngine.Debug.Log($"{methodName}: {bossSpawn.BossName} spawned {bossSpawn.TimesSpawned} times.");
+                        if (bossSpawn.TimesSpawned >= bossSpawn.MaxTriggersBeforeCooldown)
+                        {
+                            UnityEngine.Debug.Log($"{methodName}: {bossSpawn.BossName} reached max triggers, entering cooldown.");
+                            bossSpawn.TriggerCooldown();
+                        }
+                        else
+                        {
+                            bossSpawn.IsSpawnPending = false; // Reset pending after successful spawn
+                            UnityEngine.Debug.Log($"{methodName}: {bossSpawn.BossName} spawn pending reset after successful spawn.");
+                        }
+                    }
+                    else
+                    {
+                        UnityEngine.Debug.LogWarning($"{methodName}: No valid zones found for spawning {bossSpawn.BossName}.");
+                        bossSpawn.IsSpawnPending = false; // Reset pending if no valid zones
+                    }
+                }
+                else
+                {
+                    UnityEngine.Debug.LogWarning($"{methodName}: No spawn points available for {bossSpawn.BossName}.");
+                    bossSpawn.IsSpawnPending = false; // Reset pending if no spawn points available
+                }
+            }
+
+            // Yield to ensure loop iteration respects the game's update cycle
+            await UniTask.Yield(PlayerLoopTiming.Update);
+        }
 
         // Checks trigger distance and spawn chance
         private bool CanSpawn(BotWave botWave, string wildSpawnType)

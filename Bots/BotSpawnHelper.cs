@@ -36,29 +36,54 @@ namespace Donuts
         }
 
         internal static async UniTask ActivateStartingBots(BotCreationDataClass botCacheElement, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
-            BotSpawner botSpawnerClass, Vector3 spawnPosition, BotDifficulty botDifficulty, int maxCount, string zone, CancellationToken cancellationToken)
+    BotSpawner botSpawnerClass, Vector3 spawnPosition, BotDifficulty botDifficulty, int maxCount, string zone, CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested) 
+            Debug.Log("ActivateStartingBots: Method entered.");
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                Debug.Log("ActivateStartingBots: Cancellation requested, exiting method.");
                 return;
+            }
 
             bool isFollowerOrBoss = false;
 
-            //check to see if the bot is a boss or follower so we can skip adding another position since we already handled that in the group creation
-            foreach (var profile in botCacheElement.Profiles)
+            if (botCacheElement == null)
             {
-                if (profile.Info.Settings.Role.IsBoss() || profile.Info.Settings.Role.IsFollower() || BotSupportTracker.botSourceTypeMap.ContainsKey(profile.Id))
-                {
-                    isFollowerOrBoss = true;
-                    break;
-                }
+                Debug.LogError("ActivateStartingBots: botCacheElement is null.");
+            }
+            else
+            {
+                Debug.Log($"ActivateStartingBots: botCacheElement is valid with {botCacheElement.Profiles.Count} profiles.");
             }
 
+            
+            if (WildSpawnTypeDictionaries.IsBoss(wildSpawnType) || WildSpawnTypeDictionaries.IsFollower(wildSpawnType))
+            {
+                isFollowerOrBoss = true;
+                Debug.Log("ActivateStartingBots: Bot is a boss or follower.");
+            }
+            
+
             var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
+            if (cancellationTokenSource == null)
+            {
+                Debug.LogError("ActivateStartingBots: cancellationTokenSource is null.");
+            }
 
             if (botCacheElement != null && !isFollowerOrBoss)
             {
                 var closestBotZone = botSpawnerClass?.GetClosestZone(spawnPosition, out _);
                 var closestCorePoint = GetClosestCorePoint(spawnPosition);
+
+                if (closestCorePoint == null)
+                {
+                    Debug.LogError("ActivateStartingBots: closestCorePoint is null.");
+                }
+                if (closestBotZone == null)
+                {
+                    Debug.LogError("ActivateStartingBots: closestBotZone is null.");
+                }
 
                 if (closestCorePoint == null || closestBotZone == null)
                 {
@@ -66,15 +91,17 @@ namespace Donuts
                     return;
                 }
 
+                Debug.Log($"ActivateStartingBots: Adding position {spawnPosition} with core point ID {closestCorePoint.Id}.");
                 botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
 
-                Logger.LogWarning($"ActivateStartingBots: Spawning bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
-                                  $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} in spawn zone: {zone}");
+                Debug.Log($"ActivateStartingBots: Spawning bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
+                          $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} in spawn zone: {zone}");
 
                 await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource, cancellationToken);
             }
             else if (isFollowerOrBoss)
             {
+                Debug.Log("ActivateStartingBots: Bot is a follower or boss, proceeding with activation.");
                 var closestBotZone = botSpawnerClass?.GetClosestZone(spawnPosition, out _);
                 await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource, cancellationToken);
             }
@@ -82,7 +109,10 @@ namespace Donuts
             {
                 Logger.LogError($"ActivateStartingBots: Attempted to spawn a group bot but the botCacheElement was null.");
             }
+
+            Debug.Log("ActivateStartingBots: Method exiting.");
         }
+
 
         internal static WildSpawnType DetermineWildSpawnType(string spawnType)
         {
@@ -379,7 +409,7 @@ namespace Donuts
                 return;
             }
 
-            Logger.LogInfo($"SpawnSingleBot: Retrieved BotCacheDataList with {BotCacheDataList.Count} entries.");
+            Logger.LogInfo($"SpawnSingleBot: Retrieved BotCacheDataList with {BotCacheDataList.Count()} entries.");
 
             try
             {
@@ -548,16 +578,37 @@ namespace Donuts
             Debug.Log($"ActivateBot: BotCreationDataClass data initialized: {botData != null}");
             Debug.Log($"ActivateBot: ProfileData initialized: {botData._profileData != null}");
 
-            /*CreateBotCallbackWrapper.Initialize(botSpawnerClass, botData);
-            GetGroupWrapper getGroupWrapper = new GetGroupWrapper();*/
+            // Ensure profiles list is not null and has at least one profile
+            if (botData.Profiles == null || botData.Profiles.Count == 0)
+            {
+                Debug.LogError("ActivateBot: Profiles list is null or empty.");
+                return;
+            }
 
             // Use game's method_9 for activation, which handles necessary setup
             //botCreator.ActivateBot(botData, botZone, false, new Func<BotOwner, BotZone, BotsGroup>(getGroupWrapper.GetGroupAndSetEnemies), new Action<BotOwner>(CreateBotCallbackWrapper.CreateBotCallback), cancellationTokenSource.Token);
 
             //grab private CancellationTokenSource _cancellationTokenSource from BotSpawner using accesstools
-
             var cancTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
-            botSpawnerClass.method_9(botZone, botData, null, cancTokenSource.Token);
+
+            var role = botData.Profiles[0].Info.Settings.Role;
+            if (WildSpawnTypeDictionaries.IsBoss(role) || WildSpawnTypeDictionaries.IsFollower(role))
+            {
+                botSpawnerClass.method_9(botZone, botData, null, cancTokenSource.Token);
+            }
+            else
+            {
+                //use old method for bots that aren't bosses or followers
+                CreateBotCallbackWrapper createBotCallbackWrapper = new CreateBotCallbackWrapper
+                {
+                    botData = botData
+                };
+
+                GetGroupWrapper getGroupWrapper = new GetGroupWrapper();
+
+                botCreator.ActivateBot(botData, botZone, false, new Func<BotOwner, BotZone, BotsGroup>(getGroupWrapper.GetGroupAndSetEnemies), new Action<BotOwner>(createBotCallbackWrapper.CreateBotCallback), cancTokenSource.Token);
+            }
+           
 
             // Clear bot cache after activation to ensure proper cleanup
             await ClearBotCacheAfterActivation(botData);
@@ -598,16 +649,10 @@ namespace Donuts
 
                 if (botInfo.Bots == botData)
                 {
-                    botInfo.Bots.Profiles.Clear();
+                    //botInfo.Bots.Profiles.Clear();
+                    botInfo.Bots = null;
                     break;
                 }
-            }
-
-            //remove bot from cache
-            var botSourceType = BotSupportTracker.GetBotSourceType(botData.Id.ToString());
-            if (botSourceType == BotSourceType.Support)
-            {
-                BotSupportTracker.RemoveBot(botData.Id.ToString());
             }
         
         }

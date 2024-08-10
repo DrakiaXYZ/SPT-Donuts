@@ -103,5 +103,66 @@ namespace Donuts.Models
             WildSpawnType.cursedAssault
         };
 
+        private static Dictionary<WildSpawnType, (bool IsBoss, bool IsFollower)> wildSpawnTypeDictionary = new Dictionary<WildSpawnType, (bool, bool)>
+        {
+            { WildSpawnType.crazyAssaultEvent, (false, false) },
+            { WildSpawnType.assault, (false, false) },
+            { WildSpawnType.skier, (false, false) },
+            { WildSpawnType.peacemaker, (false, false) },
+            { WildSpawnType.cursedAssault, (false, false) },
+            { WildSpawnType.test, (false, false) },
+            { WildSpawnType.spiritWinter, (false, false) },
+            { WildSpawnType.spiritSpring, (false, false) },
+            { WildSpawnType.marksman, (false, false) },
+            { WildSpawnType.assaultGroup, (false, false) },
+            { WildSpawnType.sectantPriest, (true, false) },
+            { WildSpawnType.sectantWarrior, (false, true) },
+            { WildSpawnType.arenaFighterEvent, (true, true) },
+            { WildSpawnType.pmcUSEC, (false, false) },
+            { WildSpawnType.pmcBEAR, (false, false) },
+            { WildSpawnType.pmcBot, (true, true) },
+            { WildSpawnType.arenaFighter, (true, true) },
+            { WildSpawnType.exUsec, (true, true) },
+            { WildSpawnType.shooterBTR, (true, true) },
+            { WildSpawnType.bossBoarSniper, (false, true) },
+            { WildSpawnType.bossBoar, (true, false) },
+            { WildSpawnType.bossKolontay, (true, false) },
+            { WildSpawnType.bossBully, (true, false) },
+            { WildSpawnType.bossGluhar, (true, false) },
+            { WildSpawnType.bossKilla, (true, false) },
+            { WildSpawnType.bossKnight, (true, false) },
+            { WildSpawnType.bossKojaniy, (true, false) },
+            { WildSpawnType.bossSanitar, (true, false) },
+            { WildSpawnType.bossTagilla, (true, false) },
+            { WildSpawnType.bossZryachiy, (true, true) },
+            { WildSpawnType.peacefullZryachiyEvent, (true, true) },
+            { WildSpawnType.ravangeZryachiyEvent, (true, true) },
+            { WildSpawnType.sectactPriestEvent, (true, true) },
+            { WildSpawnType.bossTest, (true, false) },
+            { WildSpawnType.gifter, (true, false) },
+            { WildSpawnType.followerBoarClose1, (false, true) },
+            { WildSpawnType.followerBoarClose2, (false, true) },
+            { WildSpawnType.followerBoar, (false, true) },
+            { WildSpawnType.followerZryachiy, (true, true) },
+            { WildSpawnType.followerBigPipe, (true, true) },
+            { WildSpawnType.followerBirdEye, (true, true) },
+            { WildSpawnType.followerBully, (false, true) },
+            { WildSpawnType.followerKolontaySecurity, (false, true) },
+            { WildSpawnType.followerKolontayAssault, (false, true) },
+            { WildSpawnType.followerGluharAssault, (false, true) },
+            { WildSpawnType.followerGluharScout, (false, true) },
+            { WildSpawnType.followerGluharSecurity, (false, true) },
+            { WildSpawnType.followerGluharSnipe, (false, true) },
+            { WildSpawnType.followerKojaniy, (false, true) },
+            { WildSpawnType.followerSanitar, (false, true) },
+            { WildSpawnType.followerTagilla, (false, true) },
+            { WildSpawnType.followerTest, (false, true) }
+        };
+
+        // Example usage:
+        public static bool IsBoss(WildSpawnType type) => wildSpawnTypeDictionary.TryGetValue(type, out var result) && result.IsBoss;
+
+        public static bool IsFollower(WildSpawnType type) => wildSpawnTypeDictionary.TryGetValue(type, out var result) && result.IsFollower;
+
     }
 }
