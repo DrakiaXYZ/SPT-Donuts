@@ -867,7 +867,7 @@ namespace Donuts
 
                 var waveSupportCreationDataClass = await BotCreationDataClass.Create(supportData, DonutsBotPrep.botCreator, 1, DonutsBotPrep.botSpawnerClass);
 
-                waveSupportCreationDataClass.AddPosition(centralPosition, UnityEngine.Random.Range(0, 10000));
+                waveSupportCreationDataClass.AddPosition(offsetPosition, UnityEngine.Random.Range(0, 10000));
 
                 var closestBotZone = botSpawnerClass?.GetClosestZone(waveSupportCreationDataClass.GetPosition().position, out _);
                 var cts = new CancellationTokenSource();
