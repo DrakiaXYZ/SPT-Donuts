@@ -1014,13 +1014,14 @@ namespace Donuts
 
         internal static WildSpawnType DeterminePMCFactionBasedOnRatio()
         {
-            // Retrieve the PMC faction ratio from the configuration (e.g., a float value between 0.0 and 1.0)
-            float pmcFactionRatio = DefaultPluginVars.pmcFactionRatio.Value;
+            // int value between 0 and 100
+            int pmcFactionRatio = DefaultPluginVars.pmcFactionRatio.Value;
 
-            // Generate a random number between 0 and 1
-            float randomValue = UnityEngine.Random.value;
+            // Generate a random integer between 0 and 100
+            int randomValue = UnityEngine.Random.Range(0, 101);
 
-            // Determine the faction based on the ratio
+            // Determine the faction
+
             if (randomValue < pmcFactionRatio)
             {
                 return WildSpawnType.pmcUSEC;
