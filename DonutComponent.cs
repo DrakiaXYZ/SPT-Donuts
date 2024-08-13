@@ -434,68 +434,90 @@ namespace Donuts
         // Checks certain spawn options, reset groups timers
         private async UniTask TriggerSpawn(BotWave botWave, string zone, Vector3 coordinate, string wildSpawnType, List<Vector3> coordinates, CancellationToken cancellationToken)
         {
+            UnityEngine.Debug.Log($"TriggerSpawn started for wave {botWave} in zone {zone} with type {wildSpawnType}.");
+
             if (cancellationToken.IsCancellationRequested)
             {
-                Logger.LogDebug("Cancellation requested before triggering spawn.");
+                UnityEngine.Debug.Log("Cancellation requested before triggering spawn.");
                 return;
             }
 
             if (forceAllBotType.Value != "Disabled")
             {
                 wildSpawnType = forceAllBotType.Value.ToLower();
+                UnityEngine.Debug.Log($"Forced all bot types to {wildSpawnType}.");
             }
 
             var tasks = new List<UniTask<bool>>();
 
             if (HardCapEnabled.Value)
             {
+                UnityEngine.Debug.Log("Hard cap enabled, adding hard cap check task.");
                 tasks.Add(CheckHardCap(wildSpawnType, cancellationToken));
             }
 
+            UnityEngine.Debug.Log("Adding raid time check task.");
             tasks.Add(CheckRaidTime(wildSpawnType, cancellationToken));
 
             bool[] results;
             try
             {
+                UnityEngine.Debug.Log("Awaiting tasks to complete.");
                 results = await UniTask.WhenAll(tasks);
+                UnityEngine.Debug.Log("Tasks completed successfully.");
             }
             catch (OperationCanceledException)
             {
-                Logger.LogDebug("Cancellation requested during hard cap and raid time checks.");
+                UnityEngine.Debug.Log("Cancellation requested during hard cap and raid time checks.");
+                return;
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogError($"An exception occurred during task execution: {ex.Message}");
                 return;
             }
 
             if (results.Any(result => !result))
             {
-                Logger.LogDebug("Spawn conditions not met. Resetting group timers.");
+                UnityEngine.Debug.Log("Spawn conditions not met. Resetting group timers.");
                 ResetGroupTimers(botWave.GroupNum, wildSpawnType); // Reset timer if the wave is hard capped
                 return;
             }
 
             if (cancellationToken.IsCancellationRequested)
             {
-                Logger.LogDebug("Cancellation requested after checks but before spawning.");
+                UnityEngine.Debug.Log("Cancellation requested after checks but before spawning.");
                 return;
             }
 
             botWave.TimesSpawned++;
+            UnityEngine.Debug.Log($"Bot wave times spawned incremented: {botWave.TimesSpawned}.");
+
             ResetGroupTimers(botWave.GroupNum, wildSpawnType);
 
             if (botWave.TimesSpawned >= botWave.MaxTriggersBeforeCooldown)
             {
+                UnityEngine.Debug.Log($"Triggering cooldown for bot wave: {botWave.GroupNum}.");
                 botWave.TriggerCooldown();
             }
 
             try
             {
-                //await DonutBotSpawn.SpawnBots(botWave, zone, coordinate, wildSpawnType, coordinates, cancellationToken);
-                DonutBotSpawn.SpawnBots(botWave, zone, coordinate, wildSpawnType, coordinates, cancellationToken);
+                UnityEngine.Debug.Log("Attempting to spawn bots.");
+                // await DonutBotSpawn.SpawnBots(botWave, zone, coordinate, wildSpawnType, coordinates, cancellationToken);
+                await DonutBotSpawn.SpawnBots(botWave, zone, coordinate, wildSpawnType, coordinates, cancellationToken);
+                UnityEngine.Debug.Log("Bot spawning completed successfully.");
             }
             catch (OperationCanceledException)
             {
-                Logger.LogDebug("Cancellation requested during bot spawning.");
+                UnityEngine.Debug.Log("Cancellation requested during bot spawning.");
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogError($"An exception occurred during bot spawning: {ex.Message}");
             }
         }
+
 
         internal static Dictionary<string, List<Vector3>> GetSpawnPointsForZones(AllMapsZoneConfig allMapsZoneConfig, string maplocation, List<string> zoneNames)
         {
