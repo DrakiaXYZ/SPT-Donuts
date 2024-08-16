@@ -522,13 +522,11 @@ namespace Donuts
         internal static Dictionary<string, List<Vector3>> GetSpawnPointsForZones(AllMapsZoneConfig allMapsZoneConfig, string maplocation, List<string> zoneNames)
         {
             var spawnPointsDict = new Dictionary<string, List<Vector3>>();
-
             if (!allMapsZoneConfig.Maps.TryGetValue(maplocation, out var mapZoneConfig))
             {
                 Logger.LogError($"Map location {maplocation} not found in zone configuration.");
                 return spawnPointsDict;
             }
-
             foreach (var zoneName in zoneNames)
             {
                 if (zoneName == "all")
@@ -542,7 +540,7 @@ namespace Donuts
                         spawnPointsDict[zone.Key].AddRange(zone.Value.Select(c => new Vector3(c.X, c.Y, c.Z)));
                     }
                 }
-                else if (zoneName == "start" || zoneName == "hotspot")
+                else if (zoneName == "start" || zoneName == "hotspot" || zoneName == "boss")
                 {
                     foreach (var zone in mapZoneConfig.Zones)
                     {
@@ -568,7 +566,6 @@ namespace Donuts
                     }
                 }
             }
-
             return spawnPointsDict;
         }
 
