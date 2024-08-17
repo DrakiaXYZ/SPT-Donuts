@@ -329,6 +329,7 @@ namespace Donuts
             await UniTask.Yield(PlayerLoopTiming.Update);
         }
 
+        // Boss Waves
         private async UniTask SpawnBossAsync(BossSpawn bossSpawn, CancellationToken cancellationToken)
         {
             string methodName = nameof(SpawnBossAsync);
@@ -346,16 +347,25 @@ namespace Donuts
 
                 UnityEngine.Debug.Log($"{methodName}: Checking spawn chance for boss: {bossSpawn.BossName}");
 
-                // Check if the boss should spawn based on BossChance
-                var randomValue = UnityEngine.Random.Range(0, 100);
-                if (randomValue >= bossSpawn.BossChance)
+                int spawnChance;
+                if (DefaultPluginVars.BossUseGlobalSpawnChance[bossSpawn.BossName].Value)
                 {
-                    UnityEngine.Debug.Log($"{methodName}: Boss spawn cancelled due to chance: {bossSpawn.BossName} (Chance: {bossSpawn.BossChance}%, Rolled: {randomValue})");
+                    spawnChance = DefaultPluginVars.BossSpawnChances[bossSpawn.BossName][DonutsBotPrep.maplocation].Value;
+                }
+                else
+                {
+                    spawnChance = bossSpawn.BossChance;
+                }
+
+                // Check if the boss should spawn based on the new spawn chance
+                var randomValue = UnityEngine.Random.Range(0, 100);
+                if (randomValue >= spawnChance)
+                {
+                    UnityEngine.Debug.Log($"{methodName}: Boss spawn cancelled due to chance: {bossSpawn.BossName} (Chance: {spawnChance}%, Rolled: {randomValue})");
                     return;
                 }
 
                 UnityEngine.Debug.Log($"{methodName}: Scheduling boss spawn: {bossSpawn.BossName}");
-
                 // Set the spawn as pending to prevent multiple delay timers
                 bossSpawn.IsSpawnPending = true;
 

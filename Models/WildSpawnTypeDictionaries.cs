@@ -1,10 +1,44 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using EFT;
 
 namespace Donuts.Models
 {
     internal class WildSpawnTypeDictionaries
     {
+        internal static readonly Dictionary<string, string> BossNameToConfigName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "bossboar", "Kaban" },
+            { "bossbully", "Reshala" },
+            { "bossgluhar", "Glukhar" },
+            { "bosskilla", "Killa" },
+            { "bosskojaniy", "Reshala" },
+            { "bosskolontay", "Kollontay" },
+            { "bosssanitar", "Sanitar" },
+            { "bosstagilla", "Tagilla" },
+            { "bosszryachiy", "Zryachiy" },
+            { "exusec", "Rogues" },
+            { "pmcbot", "Raiders" },
+            { "sectantpriest", "Cultists" },
+            { "bossknight", "Knight" }
+        };
+
+        internal static readonly Dictionary<string, string> MapNameToConfigName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "factory4_day", "Factory" },
+            { "factory4_night", "Factory Night" },
+            { "bigmap", "Customs" },
+            { "woods", "Woods" },
+            { "shoreline", "Shoreline" },
+            { "lighthouse", "Lighthouse" },
+            { "rezervbase", "Reserve" },
+            { "interchange", "Interchange" },
+            { "laboratory", "Laboratory" },
+            { "tarkovstreets", "Streets" },
+            { "sandbox", "Ground Zero" },
+            { "sandbox_high", "Ground Zero High" }
+        };
+
         internal static readonly Dictionary<WildSpawnType, EPlayerSide> WildSpawnTypeToEPlayerSide = new Dictionary<WildSpawnType, EPlayerSide>
         {
             { WildSpawnType.arenaFighterEvent, EPlayerSide.Savage },
@@ -16,6 +50,7 @@ namespace Donuts.Models
             { WildSpawnType.bossGluhar, EPlayerSide.Savage },
             { WildSpawnType.bossKilla, EPlayerSide.Savage },
             { WildSpawnType.bossKojaniy, EPlayerSide.Savage },
+            { WildSpawnType.bossKolontay, EPlayerSide.Savage },
             { WildSpawnType.bossSanitar, EPlayerSide.Savage },
             { WildSpawnType.bossTagilla, EPlayerSide.Savage },
             { WildSpawnType.bossZryachiy, EPlayerSide.Savage },
@@ -29,6 +64,8 @@ namespace Donuts.Models
             { WildSpawnType.followerGluharSecurity, EPlayerSide.Savage },
             { WildSpawnType.followerGluharSnipe, EPlayerSide.Savage },
             { WildSpawnType.followerKojaniy, EPlayerSide.Savage },
+            { WildSpawnType.followerKolontaySecurity, EPlayerSide.Savage },
+            { WildSpawnType.followerKolontayAssault, EPlayerSide.Savage },
             { WildSpawnType.followerSanitar, EPlayerSide.Savage },
             { WildSpawnType.followerTagilla, EPlayerSide.Savage },
             { WildSpawnType.followerZryachiy, EPlayerSide.Savage },
@@ -57,6 +94,7 @@ namespace Donuts.Models
             { "bossgluhar", EFT.WildSpawnType.bossGluhar },
             { "bosskilla", EFT.WildSpawnType.bossKilla },
             { "bosskojaniy", EFT.WildSpawnType.bossKojaniy },
+            { "bosskolontay", EFT.WildSpawnType.bossKolontay },
             { "bosssanitar", EFT.WildSpawnType.bossSanitar },
             { "bosstagilla", EFT.WildSpawnType.bossTagilla },
             { "bosszryachiy", EFT.WildSpawnType.bossZryachiy },
@@ -70,6 +108,8 @@ namespace Donuts.Models
             { "followergluharsecurity", EFT.WildSpawnType.followerGluharSecurity },
             { "followergluharsnipe", EFT.WildSpawnType.followerGluharSnipe },
             { "followerkojaniy", EFT.WildSpawnType.followerKojaniy },
+            { "followerkolontayassault", EFT.WildSpawnType.followerKolontayAssault },
+            { "followerkolontaysecurity", EFT.WildSpawnType.followerKolontaySecurity },
             { "followersanitar", EFT.WildSpawnType.followerSanitar },
             { "followertagilla", EFT.WildSpawnType.followerTagilla },
             { "followerzryachiy", EFT.WildSpawnType.followerZryachiy },
