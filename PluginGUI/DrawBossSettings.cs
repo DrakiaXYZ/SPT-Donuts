@@ -11,13 +11,13 @@ namespace Donuts
     {
         private static int selectedBossIndex = 0;
         private static string[] bossNames = {
-            "Cultists", "Goons", "Glukhar", "Kaban", "Killa", "Kollontay",
-            "Raiders", "Reshala", "Rogues", "Sanitar", "Shturman", "Tagilla", "Zryachiy"
+            "Cultists", "Raiders", "Rogues", "Goons", "Glukhar", "Kaban", "Killa", "Kollontay",
+            "Reshala", "Sanitar", "Shturman", "Tagilla", "Zryachiy"
         };
 
         private static string[] mapNames = {
-            "Factory", "Customs", "Reserve", "Streets", "Woods", "Laboratory",
-            "Shoreline", "Ground Zero", "Interchange", "Lighthouse"
+            "Factory", "Factory Night" "Customs", "Reserve", "Streets", "Woods", "Laboratory",
+            "Shoreline", "Ground Zero", "Ground Zero High" "Interchange", "Lighthouse"
         };
 
         internal static void Enable()

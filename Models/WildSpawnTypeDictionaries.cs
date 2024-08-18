@@ -9,6 +9,7 @@ namespace Donuts.Models
         internal static readonly Dictionary<string, string> BossNameToConfigName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             { "bossboar", "Kaban" },
+            { "bossknight", "Goons" },
             { "bossbully", "Reshala" },
             { "bossgluhar", "Glukhar" },
             { "bosskilla", "Killa" },
@@ -19,8 +20,7 @@ namespace Donuts.Models
             { "bosszryachiy", "Zryachiy" },
             { "exusec", "Rogues" },
             { "pmcbot", "Raiders" },
-            { "sectantpriest", "Cultists" },
-            { "bossknight", "Knight" }
+            { "sectantpriest", "Cultists" }
         };
 
         internal static readonly Dictionary<string, string> MapNameToConfigName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
