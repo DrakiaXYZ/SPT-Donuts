@@ -60,7 +60,7 @@ namespace Donuts
             get; private set;
         }
 
-        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(5); // Limit to 5 concurrent tasks
+        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(20);
 
         public DonutsBotPrep()
         {
