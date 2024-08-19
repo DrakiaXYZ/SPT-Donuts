@@ -16,8 +16,8 @@ namespace Donuts
         };
 
         private static string[] mapNames = {
-            "Factory", "Factory Night" "Customs", "Reserve", "Streets", "Woods", "Laboratory",
-            "Shoreline", "Ground Zero", "Ground Zero High" "Interchange", "Lighthouse"
+            "Factory", "Factory Night", "Customs", "Reserve", "Streets", "Woods", "Laboratory",
+            "Shoreline", "Ground Zero", "Ground Zero High", "Interchange", "Lighthouse"
         };
 
         internal static void Enable()
