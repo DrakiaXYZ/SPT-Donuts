@@ -123,7 +123,7 @@ namespace Donuts
             "crazyassaultevent",
             "cursedassault",
             "exusec-rogues",
-            "raiders",
+            "pmcbot",
             "followerbigpipe",
             "followerbirdeye",
             "followerboar",

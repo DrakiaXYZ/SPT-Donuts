@@ -19,7 +19,7 @@ namespace Donuts.Models
             { "bosstagilla", "Tagilla" },
             { "bosszryachiy", "Zryachiy" },
             { "exusec", "Rogues" },
-            { "raiders", "Raiders" },
+            { "pmcbot", "Raiders" },
             { "sectantpriest", "Cultists" }
         };
 
@@ -118,7 +118,7 @@ namespace Donuts.Models
             { "followertagilla", EFT.WildSpawnType.followerTagilla },
             { "followerzryachiy", EFT.WildSpawnType.followerZryachiy },
             { "marksman", EFT.WildSpawnType.marksman },
-            { "raiders", EFT.WildSpawnType.pmcBot },
+            { "pmcbot", EFT.WildSpawnType.pmcBot },
             { "sectantpriest", EFT.WildSpawnType.sectantPriest },
             { "sectantwarrior", EFT.WildSpawnType.sectantWarrior },
             { "usec", EFT.WildSpawnType.pmcUSEC },
