@@ -60,7 +60,7 @@ namespace Donuts
             get; private set;
         }
 
-        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(20);
+        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(40);
 
         public DonutsBotPrep()
         {
