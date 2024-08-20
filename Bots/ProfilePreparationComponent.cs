@@ -472,20 +472,21 @@ namespace Donuts
 
                         Logger.LogInfo($"Configuring boss spawn: {bossSpawn.BossName} with chance {bossSpawn.BossChance}");
 
+                        int totalBotsForThisSpawn = 1; // Start with 1 for the boss
+
                         if (DefaultPluginVars.BossHardCapEnabled.Value)
                         {
                             // Calculate total bots for this boss spawn
-                            int totalBotsForThisSpawn = 1; // Start with 1 for the boss
                             if (bossSpawn.Supports != null)
                             {
-                                totalBotsForThisSpawn += bossSpawn.Supports.Sum(support => int.Parse(support.BossEscortAmount));
+                                totalBotsForThisSpawn += bossSpawn.Supports.Sum(support => support.BossEscortAmount);
                             }
 
                             // Check if adding this boss group would exceed the limit
                             if (maxBots + totalBotsForThisSpawn > DonutComponent.BossBotLimit)
                             {
                                 Logger.LogInfo($"Skipping boss spawn for {bossSpawn.BossName} as it would exceed the BossBotLimit for this preset (Boss Hard Cap is Enabled)");
-                                Logger.LogDebug($"maxBots: {maxBots} - totalBotsForThisSpawn: {totalBotsForThisSpawn} - BossBotLimit: {BossBotLimit}");
+                                Logger.LogDebug($"maxBots: {maxBots} - totalBotsForThisSpawn: {totalBotsForThisSpawn} - BossBotLimit: {DonutComponent.BossBotLimit}");
                                 return; // skip the rest of bosses since we've hit the boss limit and hard cap is enabled
                             }
                         }
@@ -637,6 +638,16 @@ namespace Donuts
             }
 
             // Check if the boss should spawn based on BossChance
+            int spawnChance;
+            if (DefaultPluginVars.BossUseGlobalSpawnChance[bossSpawn.BossName].Value)
+            {
+                spawnChance = DefaultPluginVars.BossSpawnChances[bossSpawn.BossName][DonutsBotPrep.maplocation].Value;
+            }
+            else
+            {
+                spawnChance = bossSpawn.BossChance;
+            }
+
             var randomValue = UnityEngine.Random.Range(0, 100);
             if (randomValue >= bossSpawn.BossChance)
             {

@@ -40,6 +40,7 @@ namespace Donuts
         //used in DonutInitialization
         internal static int PMCBotLimit;
         internal static int SCAVBotLimit;
+        internal static int BossBotLimit;
 
         internal static float PMCdespawnCooldown = 0f;
         internal static float PMCdespawnCooldownDuration = despawnInterval.Value;
@@ -639,8 +640,8 @@ namespace Donuts
 
         public static async UniTask<bool> CheckBossHardCap(CancellationToken cancellationToken)
         {
-            int activeBosses = await GetAlivePlayers("boss", cancellationToken);
-            if (activeBosses >= DonutComponent.BossBotLimit && !hotspotIgnoreHardCapBoss.Value)
+            int activeBosses = await BotCountManager.GetAlivePlayers("boss", cancellationToken);
+            if (activeBosses >= DonutComponent.BossBotLimit)
             {
                 Logger.LogDebug($"Boss spawn not allowed due to Boss Hard Cap - skipping this spawn. Active Bosses: {activeBosses}, Boss Bot Limit: {DonutComponent.BossBotLimit}");
                 return false;

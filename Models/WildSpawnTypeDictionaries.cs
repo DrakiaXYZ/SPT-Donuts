@@ -19,7 +19,7 @@ namespace Donuts.Models
             { "bosstagilla", "Tagilla" },
             { "bosszryachiy", "Zryachiy" },
             { "exusec", "Rogues" },
-            { "pmcbot", "Raiders" },
+            { "raiders", "Raiders" },
             { "sectantpriest", "Cultists" }
         };
 

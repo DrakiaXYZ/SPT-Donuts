@@ -182,6 +182,9 @@ namespace Donuts
             DefaultPluginVars.HardCapEnabled.Value = Toggle(DefaultPluginVars.HardCapEnabled.Name, DefaultPluginVars.HardCapEnabled.ToolTipText, DefaultPluginVars.HardCapEnabled.Value);
             GUILayout.Space(10);
 
+            DefaultPluginVars.BossHardCapEnabled.Value = Toggle(DefaultPluginVars.BossHardCapEnabled.Name, DefaultPluginVars.BossHardCapEnabled.ToolTipText, DefaultPluginVars.BossHardCapEnabled.Value);
+            GUILayout.Space(10);
+
             DefaultPluginVars.useTimeBasedHardStop.Value = Toggle(DefaultPluginVars.useTimeBasedHardStop.Name, DefaultPluginVars.useTimeBasedHardStop.ToolTipText, DefaultPluginVars.useTimeBasedHardStop.Value);
             GUILayout.Space(10);
 
