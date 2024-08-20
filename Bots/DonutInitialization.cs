@@ -147,47 +147,58 @@ namespace Donuts
                 case "factory4_night":
                     PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.FactoryBotLimit;
                     SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.FactoryBotLimit;
+                    BossBotLimit = raidFolderSelected.BossBotLimitPresets.FactoryBotLimit;
                     break;
                 case "bigmap":
                     PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.CustomsBotLimit;
                     SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.CustomsBotLimit;
+                    BossBotLimit = raidFolderSelected.BossBotLimitPresets.CustomsBotLimit;
                     break;
                 case "interchange":
                     PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.InterchangeBotLimit;
                     SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.InterchangeBotLimit;
+                    BossBotLimit = raidFolderSelected.BossBotLimitPresets.InterchangeBotLimit;
                     break;
                 case "rezervbase":
                     PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.ReserveBotLimit;
                     SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.ReserveBotLimit;
+                    BossBotLimit = raidFolderSelected.BossBotLimitPresets.ReserveBotLimit;
                     break;
                 case "laboratory":
                     PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.LaboratoryBotLimit;
                     SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.LaboratoryBotLimit;
+                    BossBotLimit = raidFolderSelected.BossBotLimitPresets.LaboratoryBotLimit;
                     break;
                 case "lighthouse":
                     PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.LighthouseBotLimit;
                     SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.LighthouseBotLimit;
+                    BossBotLimit = raidFolderSelected.BossBotLimitPresets.LighthouseBotLimit;
                     break;
                 case "shoreline":
                     PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.ShorelineBotLimit;
                     SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.ShorelineBotLimit;
+                    BossBotLimit = raidFolderSelected.BossBotLimitPresets.ShorelineBotLimit;
                     break;
                 case "woods":
                     PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.WoodsBotLimit;
                     SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.WoodsBotLimit;
+                    BossBotLimit = raidFolderSelected.BossBotLimitPresets.WoodsBotLimit;
                     break;
                 case "tarkovstreets":
                     PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.TarkovStreetsBotLimit;
                     SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.TarkovStreetsBotLimit;
+                    BossBotLimit = raidFolderSelected.BossBotLimitPresets.TarkovStreetsBotLimit;
                     break;
                 case "sandbox":
                 case "sandbox_high":
                     PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.GroundZeroBotLimit;
                     SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.GroundZeroBotLimit;
+                    BossBotLimit = raidFolderSelected.BossBotLimitPresets.GroundZeroBotLimit;
                     break;
                 default:
                     PMCBotLimit = 8;
                     SCAVBotLimit = 5;
+                    BossBotLimit = 8;
                     break;
             }
         }

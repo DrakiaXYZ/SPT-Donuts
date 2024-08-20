@@ -365,6 +365,46 @@ namespace Donuts
                     return;
                 }
 
+                // var tasks = new List<UniTask<bool>>();
+
+                // // Check Boss Hard Cap
+                // if (BossHardCapEnabled.Value)
+                // {
+                //     UnityEngine.Debug.Log("Boss Hard cap enabled, adding boss hard cap check task.");
+                //     tasks.Add(CheckBossHardCap(cancellationToken));
+                // }
+
+                // bool[] results;
+                // try
+                // {
+                //     UnityEngine.Debug.Log("Awaiting tasks to complete.");
+                //     results = await UniTask.WhenAll(tasks);
+                //     UnityEngine.Debug.Log("Tasks completed successfully.");
+                // }
+                // catch (OperationCanceledException)
+                // {
+                //     UnityEngine.Debug.Log("Cancellation requested during hard cap and raid time checks.");
+                //     return;
+                // }
+                // catch (Exception ex)
+                // {
+                //     UnityEngine.Debug.LogError($"An exception occurred during task execution: {ex.Message}");
+                //     return;
+                // }
+
+                // if (results.Any(result => !result))
+                // {
+                //     UnityEngine.Debug.Log("Spawn conditions not met. Resetting group timers.");
+                //     ResetGroupTimers(botWave.GroupNum, wildSpawnType); // Reset timer if the wave is hard capped
+                //     return;
+                // }
+
+                // if (cancellationToken.IsCancellationRequested)
+                // {
+                //     UnityEngine.Debug.Log("Cancellation requested after checks but before spawning.");
+                //     return;
+                // }
+
                 UnityEngine.Debug.Log($"{methodName}: Scheduling boss spawn: {bossSpawn.BossName}");
                 // Set the spawn as pending to prevent multiple delay timers
                 bossSpawn.IsSpawnPending = true;
@@ -589,13 +629,22 @@ namespace Donuts
                 Logger.LogDebug($"PMC spawn not allowed due to PMC bot limit - skipping this spawn. Active PMCs: {activePMCs}, PMC Bot Limit: {DonutComponent.PMCBotLimit}");
                 return false;
             }
-
             if (wildSpawnType == "scav" && activeSCAVs >= DonutComponent.SCAVBotLimit && !hotspotIgnoreHardCapSCAV.Value)
             {
                 Logger.LogDebug($"SCAV spawn not allowed due to SCAV bot limit - skipping this spawn. Active SCAVs: {activeSCAVs}, SCAV Bot Limit: {DonutComponent.SCAVBotLimit}");
                 return false;
             }
+            return true;
+        }
 
+        public static async UniTask<bool> CheckBossHardCap(CancellationToken cancellationToken)
+        {
+            int activeBosses = await GetAlivePlayers("boss", cancellationToken);
+            if (activeBosses >= DonutComponent.BossBotLimit && !hotspotIgnoreHardCapBoss.Value)
+            {
+                Logger.LogDebug($"Boss spawn not allowed due to Boss Hard Cap - skipping this spawn. Active Bosses: {activeBosses}, Boss Bot Limit: {DonutComponent.BossBotLimit}");
+                return false;
+            }
             return true;
         }
 
@@ -619,6 +668,7 @@ namespace Donuts
 
             return true;
         }
+
         private bool IsRaidTimeRemaining(string spawnType)
         {
             int hardStopTime;

@@ -17,6 +17,7 @@ namespace Donuts
         internal static Setting<bool> DespawnEnabledPMC;
         internal static Setting<bool> DespawnEnabledSCAV;
         internal static Setting<bool> HardCapEnabled;
+        internal static Setting<bool> BossHardCapEnabled;
         internal static Setting<float> coolDownTimer;
         internal static Setting<int> bossWaveCooldownTimer;
         internal static Setting<string> pmcGroupChance;
@@ -202,14 +203,15 @@ namespace Donuts
             };
 
         internal static string[] mapNames = {
-                "Factory", "Customs", "Reserve", "Streets", "Woods", "Laboratory",
-                "Shoreline", "Ground Zero", "Interchange", "Lighthouse"
+                "Factory", "Factory Night", "Customs", "Reserve", "Streets", "Woods", "Laboratory",
+                "Shoreline", "Ground Zero", "Ground Zero High", "Interchange", "Lighthouse"
             };
 
         internal static Dictionary<string, Dictionary<string, int>> defaultSpawnChances = new Dictionary<string, Dictionary<string, int>>
             {
                 {"Cultists", new Dictionary<string, int> {
                     {"Factory", 2},
+                    {"Factory Night", 0},
                     {"Customs", 20},
                     {"Reserve", 0},
                     {"Streets", 0},
@@ -217,11 +219,13 @@ namespace Donuts
                     {"Laboratory", 0},
                     {"Shoreline", 15},
                     {"Ground Zero", 2},
+                    {"Ground Zero High", 0},
                     {"Interchange", 0},
                     {"Lighthouse", 0}
                 }},
                 {"Goons", new Dictionary<string, int> {
                     {"Factory", 0},
+                    {"Factory Night", 0},
                     {"Customs", 40},
                     {"Reserve", 0},
                     {"Streets", 0},
@@ -229,11 +233,13 @@ namespace Donuts
                     {"Laboratory", 0},
                     {"Shoreline", 40},
                     {"Ground Zero", 0},
+                    {"Ground Zero High", 0},
                     {"Interchange", 0},
                     {"Lighthouse", 40}
                 }},
                 {"Glukhar", new Dictionary<string, int> {
                     {"Factory", 0},
+                    {"Factory Night", 0},
                     {"Customs", 0},
                     {"Reserve", 40},
                     {"Streets", 0},
@@ -241,11 +247,13 @@ namespace Donuts
                     {"Laboratory", 0},
                     {"Shoreline", 0},
                     {"Ground Zero", 0},
+                    {"Ground Zero High", 0},
                     {"Interchange", 0},
                     {"Lighthouse", 0}
                 }},
                 {"Kaban", new Dictionary<string, int> {
                     {"Factory", 0},
+                    {"Factory Night", 0},
                     {"Customs", 0},
                     {"Reserve", 0},
                     {"Streets", 40},
@@ -253,11 +261,13 @@ namespace Donuts
                     {"Laboratory", 0},
                     {"Shoreline", 0},
                     {"Ground Zero", 0},
+                    {"Ground Zero High", 0},
                     {"Interchange", 0},
                     {"Lighthouse", 0}
                 }},
                 {"Killa", new Dictionary<string, int> {
                     {"Factory", 0},
+                    {"Factory Night", 0},
                     {"Customs", 0},
                     {"Reserve", 0},
                     {"Streets", 0},
@@ -265,11 +275,13 @@ namespace Donuts
                     {"Laboratory", 0},
                     {"Shoreline", 0},
                     {"Ground Zero", 0},
+                    {"Ground Zero High", 0},
                     {"Interchange", 40},
                     {"Lighthouse", 0}
                 }},
                 {"Kollontay", new Dictionary<string, int> {
                     {"Factory", 0},
+                    {"Factory Night", 0},
                     {"Customs", 0},
                     {"Reserve", 0},
                     {"Streets", 40},
@@ -277,11 +289,13 @@ namespace Donuts
                     {"Laboratory", 0},
                     {"Shoreline", 0},
                     {"Ground Zero", 40},
+                    {"Ground Zero High", 0},
                     {"Interchange", 0},
                     {"Lighthouse", 0}
                 }},
                 {"Raiders", new Dictionary<string, int> {
                     {"Factory", 0},
+                    {"Factory Night", 0},
                     {"Customs", 0},
                     {"Reserve", 0},
                     {"Streets", 0},
@@ -289,11 +303,13 @@ namespace Donuts
                     {"Laboratory", 0},
                     {"Shoreline", 0},
                     {"Ground Zero", 0},
+                    {"Ground Zero High", 0},
                     {"Interchange", 0},
                     {"Lighthouse", 0}
                 }},
                 {"Reshala", new Dictionary<string, int> {
                     {"Factory", 0},
+                    {"Factory Night", 0},
                     {"Customs", 40},
                     {"Reserve", 0},
                     {"Streets", 0},
@@ -301,11 +317,13 @@ namespace Donuts
                     {"Laboratory", 0},
                     {"Shoreline", 0},
                     {"Ground Zero", 0},
+                    {"Ground Zero High", 0},
                     {"Interchange", 0},
                     {"Lighthouse", 0}
                 }},
                 {"Rogues", new Dictionary<string, int> {
                     {"Factory", 0},
+                    {"Factory Night", 0},
                     {"Customs", 0},
                     {"Reserve", 0},
                     {"Streets", 0},
@@ -313,11 +331,13 @@ namespace Donuts
                     {"Laboratory", 0},
                     {"Shoreline", 0},
                     {"Ground Zero", 0},
+                    {"Ground Zero High", 0},
                     {"Interchange", 0},
                     {"Lighthouse", 0}
                 }},
                 {"Sanitar", new Dictionary<string, int> {
                     {"Factory", 0},
+                    {"Factory Night", 0},
                     {"Customs", 0},
                     {"Reserve", 0},
                     {"Streets", 0},
@@ -325,11 +345,13 @@ namespace Donuts
                     {"Laboratory", 0},
                     {"Shoreline", 40},
                     {"Ground Zero", 0},
+                    {"Ground Zero High", 0},
                     {"Interchange", 0},
                     {"Lighthouse", 0}
                 }},
                 {"Shturman", new Dictionary<string, int> {
                     {"Factory", 0},
+                    {"Factory Night", 0},
                     {"Customs", 0},
                     {"Reserve", 0},
                     {"Streets", 0},
@@ -337,11 +359,13 @@ namespace Donuts
                     {"Laboratory", 0},
                     {"Shoreline", 0},
                     {"Ground Zero", 0},
+                    {"Ground Zero High", 0},
                     {"Interchange", 0},
                     {"Lighthouse", 0}
                 }},
                 {"Tagilla", new Dictionary<string, int> {
                     {"Factory", 40},
+                    {"Factory Night", 0},
                     {"Customs", 0},
                     {"Reserve", 0},
                     {"Streets", 0},
@@ -349,11 +373,13 @@ namespace Donuts
                     {"Laboratory", 0},
                     {"Shoreline", 0},
                     {"Ground Zero", 0},
+                    {"Ground Zero High", 0},
                     {"Interchange", 0},
                     {"Lighthouse", 0}
                 }},
                 {"Zryachiy", new Dictionary<string, int> {
                     {"Factory", 0},
+                    {"Factory Night", 0},
                     {"Customs", 0},
                     {"Reserve", 0},
                     {"Streets", 0},
@@ -361,6 +387,7 @@ namespace Donuts
                     {"Laboratory", 0},
                     {"Shoreline", 0},
                     {"Ground Zero", 0},
+                    {"Ground Zero High", 0},
                     {"Interchange", 0},
                     {"Lighthouse", 100}
                 }}
@@ -378,14 +405,14 @@ namespace Donuts
                 BossUseGlobalSpawnChance[bossName] = new Setting<bool>(
                     "Use Global Spawn Chance",
                     $"Use Global Spawn Chance for {bossName}",
-                    true,
-                    true);
+                    false,
+                    false);
 
                 BossSpawnChances[bossName] = new Dictionary<string, Setting<int>>();
 
                 foreach (var mapName in WildSpawnTypeDictionaries.MapNameToConfigName.Values)
                 {
-                    int defaultChance = defaultSpawnChances.TryGetValue(bossName, out var bossChances) && 
+                    int defaultChance = defaultSpawnChances.TryGetValue(bossName, out var bossChances) &&
                                         bossChances.TryGetValue(mapName, out var chance) ? chance : 0;
 
                     BossSpawnChances[bossName][mapName] = new Setting<int>(
@@ -421,6 +448,12 @@ namespace Donuts
             HardCapEnabled = new Setting<bool>(
                 "Bot Hard Cap Option",
                 "When enabled, all bot spawns will be hard capped by your preset caps. In other words, if your bot count is at the total Donuts cap then no more bots will spawn until one dies (vanilla SPT behavior).",
+                false,
+                false);
+
+            BossHardCapEnabled = new Setting<bool>(
+                "Boss Bot Hard Cap Option",
+                "When enabled, all boss bot spawns will be hard capped by your preset caps. In other words, if your bot count is at the total Donuts cap then no more bots will spawn until one dies (vanilla SPT behavior).",
                 false,
                 false);
 

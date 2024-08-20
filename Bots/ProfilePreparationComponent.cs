@@ -161,11 +161,6 @@ namespace Donuts
 
             string location = Singleton<GameWorld>.Instance.MainPlayer.Location.ToLower();
 
-            if (location == "sandbox_high")
-            {
-                location = "sandbox";
-            }
-
             maplocation = location;
 
             mapName = location switch
@@ -178,7 +173,7 @@ namespace Donuts
                 "interchange" => "interchange",
                 "woods" => "woods",
                 "sandbox" => "groundzero",
-                "sandbox_high" => "groundzero",
+                "sandbox_high" => "groundzero_high",
                 "laboratory" => "laboratory",
                 "lighthouse" => "lighthouse",
                 "shoreline" => "shoreline",
@@ -304,8 +299,6 @@ namespace Donuts
 
                 string difficultySetting = botType == "PMC" ? DefaultPluginVars.botDifficultiesPMC.Value.ToLower() : DefaultPluginVars.botDifficultiesSCAV.Value.ToLower();
                 Logger.LogInfo($"Difficulty Setting: {difficultySetting}");
-
-                maplocation = maplocation == "sandbox_high" ? "sandbox" : maplocation;
 
                 if (!startingBotConfig.Maps.TryGetValue(maplocation, out var mapConfig))
                 {
@@ -434,6 +427,7 @@ namespace Donuts
             maplocation = maplocation == "sandbox_high" ? "sandbox" : maplocation;
             Logger.LogInfo($"InitializeBossSpawns: looking at maplocation: {maplocation}");
             var bossSpawnTasks = new List<UniTask>();
+            int maxBots = 0;
 
             if (startingBotConfig.Maps.TryGetValue(maplocation, out var MapBossConfig))
             {
@@ -473,12 +467,29 @@ namespace Donuts
                         if (randomValue >= spawnChance)
                         {
                             Logger.LogInfo($"Boss spawn chance for {bossSpawn.BossName}: {spawnChance} failed (random value: {randomValue}) Not spawning this boss.");
-                            return;
+                            continue; // keep looping if this one fails spawn chance
                         }
 
                         Logger.LogInfo($"Configuring boss spawn: {bossSpawn.BossName} with chance {bossSpawn.BossChance}");
 
-                        // Use similar logic as InitializeBotInfos to get zone and coordinates
+                        if (DefaultPluginVars.BossHardCapEnabled.Value)
+                        {
+                            // Calculate total bots for this boss spawn
+                            int totalBotsForThisSpawn = 1; // Start with 1 for the boss
+                            if (bossSpawn.Supports != null)
+                            {
+                                totalBotsForThisSpawn += bossSpawn.Supports.Sum(support => int.Parse(support.BossEscortAmount));
+                            }
+
+                            // Check if adding this boss group would exceed the limit
+                            if (maxBots + totalBotsForThisSpawn > DonutComponent.BossBotLimit)
+                            {
+                                Logger.LogInfo($"Skipping boss spawn for {bossSpawn.BossName} as it would exceed the BossBotLimit for this preset (Boss Hard Cap is Enabled)");
+                                Logger.LogDebug($"maxBots: {maxBots} - totalBotsForThisSpawn: {totalBotsForThisSpawn} - BossBotLimit: {BossBotLimit}");
+                                return; // skip the rest of bosses since we've hit the boss limit and hard cap is enabled
+                            }
+                        }
+
                         var spawnPointsDict = DonutComponent.GetSpawnPointsForZones(allMapsZoneConfig, maplocation, bossSpawn.Zones);
                         if (spawnPointsDict == null || spawnPointsDict.Count == 0)
                         {
@@ -520,6 +531,8 @@ namespace Donuts
                             .ContinueWith(async () => semaphore.Release());
 
                         bossSpawnTasks.Add(task);
+
+                        maxBots += totalBotsForThisSpawn;
                     }
 
                     // Await all boss spawn tasks
