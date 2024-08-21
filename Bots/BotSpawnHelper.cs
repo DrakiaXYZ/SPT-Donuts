@@ -871,7 +871,7 @@ namespace Donuts
             switch (botDifficultiesPMC.Value.ToLower())
             {
                 case "asonline":
-                    BotDifficulty[] randomDifficulty = { BotDifficulty.easy, BotDifficulty.normal, BotDifficulty.hard };
+                    BotDifficulty[] randomDifficulty = { BotDifficulty.easy, BotDifficulty.normal, BotDifficulty.hard, BotDifficulty.impossible };
                     return randomDifficulty[UnityEngine.Random.Range(0, 3)];
                 case "easy":
                     return BotDifficulty.easy;

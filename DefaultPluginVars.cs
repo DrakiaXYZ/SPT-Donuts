@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Donuts.Models;
 using Newtonsoft.Json;
@@ -34,7 +35,7 @@ namespace Donuts
         internal static Setting<bool> hardStopOptionSCAV;
         internal static Setting<int> hardStopTimeSCAV;
         internal static Setting<int> hardStopPercentSCAV;
-        
+
         internal static Setting<bool> hotspotBoostPMC;
         internal static Setting<bool> hotspotBoostSCAV;
         internal static Setting<bool> hotspotIgnoreHardCapPMC;
@@ -43,6 +44,10 @@ namespace Donuts
         internal static Setting<float> battleStateCoolDown;
         internal static Setting<int> maxRespawnsPMC;
         internal static Setting<int> maxRespawnsSCAV;
+
+        // Bosses
+        internal static Dictionary<string, Setting<bool>> BossUseGlobalSpawnChance;
+        internal static Dictionary<string, Dictionary<string, Setting<int>>> BossSpawnChances;
 
         // Global Minimum Spawn Distance From Player
         internal static Setting<bool> globalMinSpawnDistanceFromPlayerBool;
@@ -168,7 +173,7 @@ namespace Donuts
         //IMGUI Vars
         internal static int selectedTabIndex = 0;
         internal static int selectedSubTabIndex = 0;
-        internal static string[] tabNames = { "Main Settings", "Spawn Settings", "Advanced Settings", "SpawnPoint Maker", "Debugging" };
+        internal static string[] tabNames = { "Main Settings", "Spawn Settings", "Boss Settings", "Advanced Settings", "SpawnPoint Maker", "Debugging" };
         internal static bool showGUI = false;
         internal static string[] botDiffList = { "AsOnline", "Easy", "Normal", "Hard", "Impossible" };
 
@@ -190,9 +195,210 @@ namespace Donuts
         internal static string pmcScenarioSelectionValue = null;
         internal static string scavScenarioSelectionValue = null;
 
+            // Boss settings
+        internal static string[] bossNames = {
+                "Cultists", "Goons", "Glukhar", "Kaban", "Killa", "Kollontay",
+                "Raiders", "Reshala", "Rogues", "Sanitar", "Shturman", "Tagilla", "Zryachiy"
+            };
+
+        internal static string[] mapNames = {
+                "Factory", "Customs", "Reserve", "Streets", "Woods", "Laboratory",
+                "Shoreline", "Ground Zero", "Interchange", "Lighthouse"
+            };
+
+        internal static Dictionary<string, Dictionary<string, int>> defaultSpawnChances = new Dictionary<string, Dictionary<string, int>>
+            {
+                {"Cultists", new Dictionary<string, int> {
+                    {"Factory", 2},
+                    {"Customs", 20},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 20},
+                    {"Laboratory", 0},
+                    {"Shoreline", 15},
+                    {"Ground Zero", 2},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Goons", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 40},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 40},
+                    {"Laboratory", 0},
+                    {"Shoreline", 40},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 40}
+                }},
+                {"Glukhar", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 40},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Kaban", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 40},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Killa", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 40},
+                    {"Lighthouse", 0}
+                }},
+                {"Kollontay", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 40},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 40},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Raiders", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Reshala", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 40},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Rogues", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Sanitar", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 40},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Shturman", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 40},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Tagilla", new Dictionary<string, int> {
+                    {"Factory", 40},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Zryachiy", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 100}
+                }}
+            };
+
         //Default Constructor
         static DefaultPluginVars()
         {
+            // Boss Settings
+            BossUseGlobalSpawnChance = new Dictionary<string, Setting<bool>>();
+            BossSpawnChances = new Dictionary<string, Dictionary<string, Setting<int>>>();
+
+            foreach (var bossName in WildSpawnTypeDictionaries.BossNameToConfigName.Values)
+            {
+                BossUseGlobalSpawnChance[bossName] = new Setting<bool>(
+                    "Use Global Spawn Chance",
+                    $"Use Global Spawn Chance for {bossName}",
+                    true,
+                    true);
+
+                BossSpawnChances[bossName] = new Dictionary<string, Setting<int>>();
+
+                foreach (var mapName in WildSpawnTypeDictionaries.MapNameToConfigName.Values)
+                {
+                    int defaultChance = defaultSpawnChances.TryGetValue(bossName, out var bossChances) && 
+                                        bossChances.TryGetValue(mapName, out var chance) ? chance : 0;
+
+                    BossSpawnChances[bossName][mapName] = new Setting<int>(
+                        $"{mapName}",
+                        $"Spawn chance for {bossName} on {mapName}",
+                        defaultChance,
+                        defaultChance,
+                        0,
+                        100
+                    );
+                }
+            }
+
             // Main Settings
             PluginEnabled = new Setting<bool>(
                 "Donuts On",
@@ -747,6 +953,19 @@ namespace Donuts
                         }
                     }
                 }
+                else if (field.Name == "BossUseGlobalSpawnChance")
+                {
+                    var dict = (Dictionary<string, Setting<bool>>)field.GetValue(null);
+                    settingsDictionary[field.Name] = dict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Value);
+                }
+                else if (field.Name == "BossSpawnChances")
+                {
+                    var dict = (Dictionary<string, Dictionary<string, Setting<int>>>)field.GetValue(null);
+                    settingsDictionary[field.Name] = dict.ToDictionary(
+                        bossKvp => bossKvp.Key,
+                        bossKvp => bossKvp.Value.ToDictionary(mapKvp => mapKvp.Key, mapKvp => mapKvp.Value.Value)
+                    );
+                }
             }
 
             // Add windowRect position and size to the dictionary
@@ -763,7 +982,6 @@ namespace Donuts
             var settingsDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
 
             var fields = typeof(DefaultPluginVars).GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-
 
             foreach (var field in fields)
             {
@@ -812,6 +1030,36 @@ namespace Donuts
                         catch (Exception ex)
                         {
                             Debug.LogError($"Error setting value for field {field.Name}: {ex}");
+                        }
+                    }
+                }
+                else if (field.Name == "BossUseGlobalSpawnChance" && settingsDictionary.TryGetValue(field.Name, out var bossUseGlobalSpawnChanceObj))
+                {
+                    var dict = (Dictionary<string, Setting<bool>>)field.GetValue(null);
+                    var loadedDict = JsonConvert.DeserializeObject<Dictionary<string, bool>>(JsonConvert.SerializeObject(bossUseGlobalSpawnChanceObj));
+                    foreach (var kvp in loadedDict)
+                    {
+                        if (dict.TryGetValue(kvp.Key, out var setting))
+                        {
+                            setting.Value = kvp.Value;
+                        }
+                    }
+                }
+                else if (field.Name == "BossSpawnChances" && settingsDictionary.TryGetValue(field.Name, out var bossSpawnChancesObj))
+                {
+                    var dict = (Dictionary<string, Dictionary<string, Setting<int>>>)field.GetValue(null);
+                    var loadedDict = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, int>>>(JsonConvert.SerializeObject(bossSpawnChancesObj));
+                    foreach (var bossKvp in loadedDict)
+                    {
+                        if (dict.TryGetValue(bossKvp.Key, out var mapDict))
+                        {
+                            foreach (var mapKvp in bossKvp.Value)
+                            {
+                                if (mapDict.TryGetValue(mapKvp.Key, out var setting))
+                                {
+                                    setting.Value = mapKvp.Value;
+                                }
+                            }
                         }
                     }
                 }

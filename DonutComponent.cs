@@ -329,6 +329,7 @@ namespace Donuts
             await UniTask.Yield(PlayerLoopTiming.Update);
         }
 
+        // Boss Waves
         private async UniTask SpawnBossAsync(BossSpawn bossSpawn, CancellationToken cancellationToken)
         {
             string methodName = nameof(SpawnBossAsync);
@@ -346,16 +347,25 @@ namespace Donuts
 
                 UnityEngine.Debug.Log($"{methodName}: Checking spawn chance for boss: {bossSpawn.BossName}");
 
-                // Check if the boss should spawn based on BossChance
-                var randomValue = UnityEngine.Random.Range(0, 100);
-                if (randomValue >= bossSpawn.BossChance)
+                int spawnChance;
+                if (DefaultPluginVars.BossUseGlobalSpawnChance[bossSpawn.BossName].Value)
                 {
-                    UnityEngine.Debug.Log($"{methodName}: Boss spawn cancelled due to chance: {bossSpawn.BossName} (Chance: {bossSpawn.BossChance}%, Rolled: {randomValue})");
+                    spawnChance = DefaultPluginVars.BossSpawnChances[bossSpawn.BossName][DonutsBotPrep.maplocation].Value;
+                }
+                else
+                {
+                    spawnChance = bossSpawn.BossChance;
+                }
+
+                // Check if the boss should spawn based on the new spawn chance
+                var randomValue = UnityEngine.Random.Range(0, 100);
+                if (randomValue >= spawnChance)
+                {
+                    UnityEngine.Debug.Log($"{methodName}: Boss spawn cancelled due to chance: {bossSpawn.BossName} (Chance: {spawnChance}%, Rolled: {randomValue})");
                     return;
                 }
 
                 UnityEngine.Debug.Log($"{methodName}: Scheduling boss spawn: {bossSpawn.BossName}");
-
                 // Set the spawn as pending to prevent multiple delay timers
                 bossSpawn.IsSpawnPending = true;
 
@@ -522,13 +532,11 @@ namespace Donuts
         internal static Dictionary<string, List<Vector3>> GetSpawnPointsForZones(AllMapsZoneConfig allMapsZoneConfig, string maplocation, List<string> zoneNames)
         {
             var spawnPointsDict = new Dictionary<string, List<Vector3>>();
-
             if (!allMapsZoneConfig.Maps.TryGetValue(maplocation, out var mapZoneConfig))
             {
                 Logger.LogError($"Map location {maplocation} not found in zone configuration.");
                 return spawnPointsDict;
             }
-
             foreach (var zoneName in zoneNames)
             {
                 if (zoneName == "all")
@@ -542,7 +550,7 @@ namespace Donuts
                         spawnPointsDict[zone.Key].AddRange(zone.Value.Select(c => new Vector3(c.X, c.Y, c.Z)));
                     }
                 }
-                else if (zoneName == "start" || zoneName == "hotspot")
+                else if (zoneName == "start" || zoneName == "hotspot" || zoneName == "boss")
                 {
                     foreach (var zone in mapZoneConfig.Zones)
                     {
@@ -568,7 +576,6 @@ namespace Donuts
                     }
                 }
             }
-
             return spawnPointsDict;
         }
 

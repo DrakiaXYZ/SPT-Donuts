@@ -60,7 +60,7 @@ namespace Donuts
             get; private set;
         }
 
-        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(5); // Limit to 5 concurrent tasks
+        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(40);
 
         public DonutsBotPrep()
         {
@@ -442,6 +442,40 @@ namespace Donuts
                 {
                     foreach (var bossSpawn in bosses)
                     {
+                        int spawnChance;
+                        string bossConfigName = WildSpawnTypeDictionaries.BossNameToConfigName.TryGetValue(bossSpawn.BossName, out var configName)
+                            ? configName
+                            : bossSpawn.BossName;
+
+                        string mapConfigName = WildSpawnTypeDictionaries.MapNameToConfigName.TryGetValue(DonutsBotPrep.maplocation, out var mapName)
+                            ? mapName
+                            : DonutsBotPrep.maplocation;
+
+                        if (DefaultPluginVars.BossUseGlobalSpawnChance.TryGetValue(bossConfigName, out var useGlobalChance) && useGlobalChance.Value)
+                        {
+                            if (DefaultPluginVars.BossSpawnChances.TryGetValue(bossConfigName, out var mapChances) &&
+                                mapChances.TryGetValue(mapConfigName, out var chanceForMap))
+                            {
+                                spawnChance = chanceForMap.Value;
+                            }
+                            else
+                            {
+                                spawnChance = bossSpawn.BossChance;
+                            }
+                        }
+                        else
+                        {
+                            spawnChance = bossSpawn.BossChance;
+                        }
+
+                        // Check if the boss should spawn based on the new spawn chance
+                        var randomValue = UnityEngine.Random.Range(0, 100);
+                        if (randomValue >= spawnChance)
+                        {
+                            Logger.LogInfo($"Boss spawn chance for {bossSpawn.BossName}: {spawnChance} failed (random value: {randomValue}) Not spawning this boss.");
+                            return;
+                        }
+
                         Logger.LogInfo($"Configuring boss spawn: {bossSpawn.BossName} with chance {bossSpawn.BossChance}");
 
                         // Use similar logic as InitializeBotInfos to get zone and coordinates
