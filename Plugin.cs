@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using Cysharp.Threading.Tasks;
 using Donuts.Models;
 using Donuts.Patches;
 using dvize.Donuts.Patches;
@@ -244,7 +245,7 @@ namespace Donuts
             return DefaultPluginVars.pmcScenarios.FirstOrDefault(folder => folder.Name == folderName);
         }
 
-        internal static string RunWeightedScenarioSelectionSync()
+        internal static async UniTask<string> RunWeightedScenarioSelectionSync()
         {
             try
             {

@@ -106,8 +106,8 @@ namespace Donuts
             }
 
             // Get selected preset and setup bot limits now
-            selectionName = DonutsPlugin.RunWeightedScenarioSelectionSync();
-            DonutInitialization.SetupBotLimitSync(selectionName);
+            selectionName = await DonutsPlugin.RunWeightedScenarioSelectionSync();
+            await DonutInitialization.SetupBotLimitSync(selectionName);
 
             Logger.LogWarning($"Selected selectionName: {selectionName}");
 

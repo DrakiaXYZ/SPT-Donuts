@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using BepInEx.Logging;
+using Cysharp.Threading.Tasks;
 using Donuts.Models;
 using EFT;
 using EFT.Communications;
@@ -138,7 +139,7 @@ namespace Donuts
 
         }
 
-        internal static void SetupBotLimitSync(string folderName)
+        internal static async UniTask SetupBotLimitSync(string folderName)
         {
             Folder raidFolderSelected = DonutsPlugin.GrabDonutsFolder(folderName);
             switch (DonutsBotPrep.maplocation)
