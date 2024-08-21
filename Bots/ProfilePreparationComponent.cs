@@ -470,7 +470,7 @@ namespace Donuts
                             continue; // keep looping if this one fails spawn chance
                         }
 
-                        Logger.LogInfo($"Configuring boss spawn: {bossSpawn.BossName} with chance {bossSpawn.BossChance}");
+                        Logger.LogInfo($"Scheduling boss spawn: {bossSpawn.BossName} (Chance: {spawnChance}%, Rolled: {randomValue})");
 
                         int totalBotsForThisSpawn = 1; // Start with 1 for the boss
 
@@ -580,7 +580,7 @@ namespace Donuts
             switch (difficultySetting)
             {
                 case "asonline":
-                    return new List<BotDifficulty> { BotDifficulty.easy, BotDifficulty.normal, BotDifficulty.hard };
+                    return new List<BotDifficulty> { BotDifficulty.easy, BotDifficulty.normal, BotDifficulty.hard, BotDifficulty.impossible};
                 case "easy":
                     return new List<BotDifficulty> { BotDifficulty.easy };
                 case "normal":
@@ -636,26 +636,6 @@ namespace Donuts
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(bossSpawn.TimeDelay), cancellationToken: cancellationToken);
             }
-
-            // Check if the boss should spawn based on BossChance
-            int spawnChance;
-            if (DefaultPluginVars.BossUseGlobalSpawnChance[bossSpawn.BossName].Value)
-            {
-                spawnChance = DefaultPluginVars.BossSpawnChances[bossSpawn.BossName][DonutsBotPrep.maplocation].Value;
-            }
-            else
-            {
-                spawnChance = bossSpawn.BossChance;
-            }
-
-            var randomValue = UnityEngine.Random.Range(0, 100);
-            if (randomValue >= bossSpawn.BossChance)
-            {
-                Logger.LogInfo($"Boss spawn cancelled: {bossSpawn.BossName} (Chance: {bossSpawn.BossChance}%, Rolled: {randomValue})");
-                return;
-            }
-
-            Logger.LogInfo($"Scheduling boss spawn: {bossSpawn.BossName} (Chance: {bossSpawn.BossChance}%, Rolled: {randomValue})");
 
             // Create boss and get the central position for supports
             var bossCreationData = await CreateBoss(bossSpawn, coordinates, cancellationToken, selectedZone);

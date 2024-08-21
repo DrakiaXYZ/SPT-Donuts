@@ -349,9 +349,25 @@ namespace Donuts
                 UnityEngine.Debug.Log($"{methodName}: Checking spawn chance for boss: {bossSpawn.BossName}");
 
                 int spawnChance;
-                if (DefaultPluginVars.BossUseGlobalSpawnChance[bossSpawn.BossName].Value)
+                string bossConfigName = WildSpawnTypeDictionaries.BossNameToConfigName.TryGetValue(bossSpawn.BossName, out var configName)
+                    ? configName
+                    : bossSpawn.BossName;
+
+                string mapConfigName = WildSpawnTypeDictionaries.MapNameToConfigName.TryGetValue(DonutsBotPrep.maplocation, out var mapName)
+                    ? mapName
+                    : DonutsBotPrep.maplocation;
+
+                if (DefaultPluginVars.BossUseGlobalSpawnChance.TryGetValue(bossConfigName, out var useGlobalChance) && useGlobalChance.Value)
                 {
-                    spawnChance = DefaultPluginVars.BossSpawnChances[bossSpawn.BossName][DonutsBotPrep.maplocation].Value;
+                    if (DefaultPluginVars.BossSpawnChances.TryGetValue(bossConfigName, out var mapChances) &&
+                        mapChances.TryGetValue(mapConfigName, out var chanceForMap))
+                    {
+                        spawnChance = chanceForMap.Value;
+                    }
+                    else
+                    {
+                        spawnChance = bossSpawn.BossChance;
+                    }
                 }
                 else
                 {
