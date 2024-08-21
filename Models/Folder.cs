@@ -27,6 +27,11 @@ namespace Donuts.Models
             get; set;
         }
 
+        public BossBotLimitPresets BossBotLimitPresets
+        {
+            get; set;
+        }
+
         public string RandomScenarioConfig
         {
             get; set;
